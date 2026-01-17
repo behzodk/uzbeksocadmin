@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   if (
+    pathname === "/" ||
+    pathname.startsWith("/privacy-policy") ||
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/_next") ||
