@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Bold,
   Italic,
@@ -33,8 +34,10 @@ import {
   Type,
   Maximize2,
   Minimize2,
+  FileCode2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Textarea } from "@/components/ui/textarea"
 
 interface RichTextEditorProps {
   value: string
@@ -81,9 +84,17 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
   const editorRef = useRef<HTMLDivElement>(null)
   const [linkUrl, setLinkUrl] = useState("")
   const [imageUrl, setImageUrl] = useState("")
+  const [imageWidth, setImageWidth] = useState("100")
+  const [imageHeight, setImageHeight] = useState("auto")
+  const [imageSizeUnit, setImageSizeUnit] = useState("%")
   const [videoUrl, setVideoUrl] = useState("")
+  const [videoWidth, setVideoWidth] = useState("100")
+  const [videoHeight, setVideoHeight] = useState("auto")
+  const [videoSizeUnit, setVideoSizeUnit] = useState("%")
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isHtmlMode, setIsHtmlMode] = useState(false)
   const initializedRef = useRef(false)
+  const savedSelection = useRef<Range | null>(null)
 
   useEffect(() => {
     if (editorRef.current && !initializedRef.current) {
@@ -98,7 +109,7 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
         editorRef.current.innerHTML = value
       }
     }
-  }, [value])
+  }, [value, isHtmlMode])
 
   const handleContentChange = useCallback(() => {
     if (editorRef.current) {
@@ -106,13 +117,32 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
     }
   }, [onChange])
 
+  const saveSelection = useCallback(() => {
+    const selection = window.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+      if (editorRef.current && editorRef.current.contains(range.commonAncestorContainer)) {
+        savedSelection.current = range
+      }
+    }
+  }, [])
+
+  const restoreSelection = useCallback(() => {
+    const selection = window.getSelection()
+    if (selection && savedSelection.current) {
+      selection.removeAllRanges()
+      selection.addRange(savedSelection.current)
+    }
+  }, [])
+
   const execCommand = useCallback(
     (command: string, value?: string) => {
+      restoreSelection()
       document.execCommand(command, false, value)
       editorRef.current?.focus()
       handleContentChange()
     },
-    [handleContentChange],
+    [handleContentChange, restoreSelection],
   )
 
   const insertLink = useCallback(() => {
@@ -124,21 +154,33 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
 
   const insertImage = useCallback(() => {
     if (imageUrl) {
-      execCommand("insertImage", imageUrl)
+      const width = imageWidth === "auto" ? "auto" : `${imageWidth}${imageSizeUnit}`
+      const height = imageHeight === "auto" ? "auto" : `${imageHeight}${imageSizeUnit}`
+      const imgHtml = `<img src="${imageUrl}" style="width: ${width}; height: ${height}; display: block; margin: 1rem auto; border-radius: 0.5rem;" />`
+      execCommand("insertHTML", imgHtml)
       setImageUrl("")
     }
-  }, [imageUrl, execCommand])
+  }, [imageUrl, imageWidth, imageHeight, imageSizeUnit, execCommand])
 
   const insertVideo = useCallback(() => {
     if (videoUrl) {
       const videoId = extractYouTubeId(videoUrl)
       if (videoId) {
-        const iframe = `<div class="video-embed" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:100%;margin:1rem 0;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`
-        execCommand("insertHTML", iframe)
+        const width = videoWidth === "auto" ? "100%" : `${videoWidth}${videoSizeUnit}`
+        const height = videoHeight === "auto" ? "0" : `${videoHeight}${videoSizeUnit}`
+        
+        // If height is auto/0, use 16:9 aspect ratio container
+        if (videoHeight === "auto" || videoHeight === "0") {
+          const iframe = `<div class="video-embed" style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;max-width:${width};margin:1rem auto;"><iframe src="https://www.youtube.com/embed/${videoId}" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`
+          execCommand("insertHTML", iframe)
+        } else {
+          const iframe = `<div class="video-embed" style="width:${width};height:${height};margin:1rem auto;"><iframe src="https://www.youtube.com/embed/${videoId}" style="width:100%;height:100%;border:0;" allowfullscreen></iframe></div>`
+          execCommand("insertHTML", iframe)
+        }
       }
       setVideoUrl("")
     }
-  }, [videoUrl, execCommand])
+  }, [videoUrl, videoWidth, videoHeight, videoSizeUnit, execCommand])
 
   const extractYouTubeId = (url: string) => {
     const match = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{11})/)
@@ -358,6 +400,38 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
                   value={imageUrl}
                   onChange={(e) => setImageUrl(e.target.value)}
                 />
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Width</p>
+                    <Input
+                      placeholder="100"
+                      value={imageWidth}
+                      onChange={(e) => setImageWidth(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Height</p>
+                    <Input
+                      placeholder="auto"
+                      value={imageHeight}
+                      onChange={(e) => setImageHeight(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <div className="w-16 space-y-1">
+                    <p className="text-[10px] text-muted-foreground uppercase font-semibold">Unit</p>
+                    <Select value={imageSizeUnit} onValueChange={setImageSizeUnit}>
+                      <SelectTrigger className="h-8">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="%">%</SelectItem>
+                        <SelectItem value="px">px</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <Button size="sm" onClick={insertImage} className="w-full">
                   Insert
                 </Button>
@@ -395,13 +469,45 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">
-            <div className="space-y-2">
+            <div className="space-y-3">
               <p className="text-sm font-medium">Embed YouTube Video</p>
               <Input
                 placeholder="https://youtube.com/watch?v=..."
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
               />
+              <div className="flex gap-2 items-center">
+                <div className="flex-1 space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Width</p>
+                  <Input
+                    placeholder="100"
+                    value={videoWidth}
+                    onChange={(e) => setVideoWidth(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Height</p>
+                  <Input
+                    placeholder="auto"
+                    value={videoHeight}
+                    onChange={(e) => setVideoHeight(e.target.value)}
+                    className="h-8"
+                  />
+                </div>
+                <div className="w-16 space-y-1">
+                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Unit</p>
+                  <Select value={videoSizeUnit} onValueChange={setVideoSizeUnit}>
+                    <SelectTrigger className="h-8">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="%">%</SelectItem>
+                      <SelectItem value="px">px</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <Button size="sm" onClick={insertVideo} className="w-full">
                 Embed
               </Button>
@@ -419,6 +525,12 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
           <RemoveFormatting className="h-4 w-4" />
         </ToolbarButton>
 
+        <ToolbarDivider />
+
+        <ToolbarButton onClick={() => setIsHtmlMode(!isHtmlMode)} active={isHtmlMode} title="Source Code">
+          <FileCode2 className="h-4 w-4" />
+        </ToolbarButton>
+
         <div className="flex-1" />
 
         <ToolbarButton
@@ -430,28 +542,44 @@ export function RichTextEditor({ value, onChange, placeholder, className, minHei
       </div>
 
       {/* Editor Content */}
-      <div
-        ref={editorRef}
-        contentEditable
-        className={cn(
-          "p-4 outline-none overflow-auto prose prose-sm max-w-none",
-          "focus:ring-0 focus:outline-none",
-          "[&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4",
-          "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3",
-          "[&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-2",
-          "[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4",
-          "[&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto",
-          "[&_ul]:list-disc [&_ul]:ml-6",
-          "[&_ol]:list-decimal [&_ol]:ml-6",
-          "[&_a]:text-primary [&_a]:underline",
-          "[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4",
-          isFullscreen ? "flex-1" : "",
-        )}
-        style={{ minHeight: isFullscreen ? "auto" : minHeight }}
-        onInput={handleContentChange}
-        onBlur={handleContentChange}
-        data-placeholder={placeholder}
-      />
+      {isHtmlMode ? (
+        <Textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className={cn(
+            "p-4 font-mono text-sm resize-none border-0 focus-visible:ring-0 rounded-none",
+            isFullscreen ? "flex-1" : "",
+          )}
+          style={{ minHeight: isFullscreen ? "auto" : minHeight, height: isFullscreen ? "100%" : "auto" }}
+          spellCheck={false}
+        />
+      ) : (
+        <div
+          ref={editorRef}
+          contentEditable
+          className={cn(
+            "p-4 outline-none overflow-auto prose prose-sm max-w-none",
+            "focus:ring-0 focus:outline-none",
+            "[&_h1]:text-3xl [&_h1]:font-bold [&_h1]:mb-4",
+            "[&_h2]:text-2xl [&_h2]:font-bold [&_h2]:mb-3",
+            "[&_h3]:text-xl [&_h3]:font-bold [&_h3]:mb-2",
+            "[&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4",
+            "[&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-lg [&_pre]:overflow-x-auto",
+            "[&_ul]:list-disc [&_ul]:ml-6",
+            "[&_ol]:list-decimal [&_ol]:ml-6",
+            "[&_a]:text-primary [&_a]:underline",
+            "[&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-lg [&_img]:my-4",
+            isFullscreen ? "flex-1" : "",
+          )}
+          style={{ minHeight: isFullscreen ? "auto" : minHeight }}
+          onInput={handleContentChange}
+          onBlur={() => {
+            handleContentChange()
+            saveSelection()
+          }}
+          data-placeholder={placeholder}
+        />
+      )}
     </div>
   )
 }

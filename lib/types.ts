@@ -12,6 +12,12 @@ export interface Member {
   updated_at: string
 }
 
+export interface ScheduleItem {
+  time: string
+  title: string
+  description?: string
+}
+
 export interface Event {
   id: string
   title: string
@@ -24,6 +30,12 @@ export interface Event {
   end_date: string | null
   capacity: number | null
   status: "draft" | "published" | "cancelled" | "completed"
+  visibility: "public" | "private"
+  event_type: string
+  is_featured: boolean
+  highlights: string[] | null
+  what_to_bring: string[] | null
+  schedule: ScheduleItem[] | null
   image_url: string | null
   created_at: string
   updated_at: string
