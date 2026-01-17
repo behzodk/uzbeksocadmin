@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ShieldAlert, Lock, AlertTriangle } from "lucide-react"
+import { ShieldCheck, Users, Calendar, Mail, Lock } from "lucide-react"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 
@@ -13,71 +13,98 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-zinc-950 text-zinc-50 p-6 selection:bg-red-500/30">
-      <div className="w-full max-w-2xl space-y-12 text-center">
-        
-        {/* Warning Header */}
-        <div className="space-y-6">
-          <div className="inline-flex items-center justify-center p-4 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 mb-4 animate-pulse">
-            <ShieldAlert className="w-12 h-12" />
+    <div className="min-h-screen flex flex-col bg-background text-foreground selection:bg-primary/10">
+      {/* Navigation / Header */}
+      <header className="px-6 py-4 border-b border-border flex justify-between items-center">
+        <div className="flex items-center gap-2 font-semibold">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <ShieldCheck className="w-5 h-5 text-primary" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tighter uppercase text-red-500">
-            Restricted Access
-          </h1>
-          <div className="h-px w-24 mx-auto bg-red-900/50" />
+          <span>uzbeksoc admin</span>
         </div>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
+          <Link href="/terms-of-service" className="hover:text-foreground transition-colors">Terms</Link>
+        </div>
+      </header>
 
-        {/* Confidentiality Notice */}
-        <div className="space-y-6 max-w-lg mx-auto">
-          <p className="text-lg md:text-xl text-zinc-400 font-light leading-relaxed">
-            This system contains <span className="text-zinc-100 font-medium">private and confidential information</span>.
-            Access is strictly limited to authorized administrative personnel only.
-          </p>
+      <main className="flex-1 flex flex-col items-center justify-center p-6 md:p-12">
+        <div className="w-full max-w-5xl grid md:grid-cols-2 gap-12 items-center">
           
-          <div className="bg-zinc-900/50 border border-zinc-800 rounded-lg p-6 text-left space-y-4">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-zinc-400">
-                Unauthorized access attempts are monitored and logged. Any attempt to bypass security protocols or access data without explicit authorization may result in legal action.
+          {/* Left Column: Description */}
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+                Organization Management System
+              </h1>
+              <p className="text-xl text-muted-foreground leading-relaxed">
+                A centralized internal platform designed for authorized administrators to manage members, coordinate events, and distribute newsletters efficiently.
               </p>
             </div>
-            <div className="flex items-start gap-3">
-              <Lock className="w-5 h-5 text-zinc-500 shrink-0 mt-0.5" />
-              <p className="text-sm text-zinc-400">
-                If you are not an administrator, please leave this page immediately. Do not attempt to log in or exploit this system.
+
+            <div className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-md bg-blue-500/10 text-blue-500 mt-1">
+                  <Users className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Member Directory</h3>
+                  <p className="text-sm text-muted-foreground">Maintain comprehensive records of active members and their roles.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-md bg-purple-500/10 text-purple-500 mt-1">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Event Scheduling</h3>
+                  <p className="text-sm text-muted-foreground">Create, publish, and manage upcoming organizational events.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="p-2 rounded-md bg-green-500/10 text-green-500 mt-1">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">Newsletter Campaigns</h3>
+                  <p className="text-sm text-muted-foreground">Draft and send updates to the entire organization.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Login Box */}
+          <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
+            <div className="text-center space-y-4 mb-8">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h2 className="text-2xl font-semibold">Authorized Access Only</h2>
+              <p className="text-sm text-muted-foreground">
+                This application is restricted to authorized personnel. Please sign in with your organizational Google account to continue.
+              </p>
+            </div>
+
+            <Link href="/sign-in" className="w-full block">
+              <Button size="lg" className="w-full">
+                Proceed to Login
+              </Button>
+            </Link>
+
+            <div className="mt-6 text-center">
+              <p className="text-xs text-muted-foreground">
+                By signing in, you agree to our <Link href="/terms-of-service" className="underline hover:text-foreground">Terms of Service</Link> and <Link href="/privacy-policy" className="underline hover:text-foreground">Privacy Policy</Link>.
               </p>
             </div>
           </div>
         </div>
+      </main>
 
-        {/* Actions */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-6 pt-4">
-          <Link 
-            href="/privacy-policy" 
-            className="text-sm text-zinc-500 hover:text-zinc-300 underline underline-offset-4 transition-colors"
-          >
-            Privacy Policy
-          </Link>
-          <span className="text-zinc-800 hidden md:inline">•</span>
-          <Link 
-            href="/terms-of-service" 
-            className="text-sm text-zinc-500 hover:text-zinc-300 underline underline-offset-4 transition-colors"
-          >
-            Terms of Service
-          </Link>
-          <span className="text-zinc-800 hidden md:inline">•</span>
-          <Link href="/sign-in">
-            <Button variant="outline" className="border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 hover:border-zinc-700 transition-all">
-              Admin Login
-            </Button>
-          </Link>
-        </div>
-
-        {/* Footer */}
-        <div className="pt-12 text-xs text-zinc-700 font-mono uppercase tracking-widest">
-          System ID: {Math.random().toString(36).substring(2, 10).toUpperCase()} • Secured
-        </div>
-      </div>
+      <footer className="px-6 py-6 text-center text-sm text-muted-foreground border-t border-border">
+        <p>&copy; {new Date().getFullYear()} uzbeksoc. All rights reserved.</p>
+      </footer>
     </div>
   )
 }
