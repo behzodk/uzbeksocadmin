@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function PrivacyPolicyPage() {
   return (
     <div className="min-h-screen bg-background px-6 py-12">
@@ -201,6 +203,14 @@ export default function PrivacyPolicyPage() {
             behzodmusurmonqulov@gmail.com
           </p>
         </section>
+
+        <div className="h-px bg-border" />
+        
+        <div className="flex justify-center">
+          <Link href="/terms-of-service" className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4">
+            Terms of Service
+          </Link>
+        </div>
       </div>
     </div>
   );

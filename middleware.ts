@@ -13,6 +13,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname === "/" ||
     pathname.startsWith("/privacy-policy") ||
+    pathname.startsWith("/terms-of-service") ||
     pathname.startsWith("/sign-in") ||
     pathname.startsWith("/auth/callback") ||
     pathname.startsWith("/_next") ||

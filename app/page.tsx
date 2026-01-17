@@ -59,6 +59,13 @@ export default async function LandingPage() {
             Privacy Policy
           </Link>
           <span className="text-zinc-800 hidden md:inline">•</span>
+          <Link 
+            href="/terms-of-service" 
+            className="text-sm text-zinc-500 hover:text-zinc-300 underline underline-offset-4 transition-colors"
+          >
+            Terms of Service
+          </Link>
+          <span className="text-zinc-800 hidden md:inline">•</span>
           <Link href="/sign-in">
             <Button variant="outline" className="border-zinc-800 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 hover:border-zinc-700 transition-all">
               Admin Login
