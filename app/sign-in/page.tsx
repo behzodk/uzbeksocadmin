@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ArrowRight } from "lucide-react"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
-export default function SignInPage() {
+function SignInContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
@@ -53,6 +54,18 @@ export default function SignInPage() {
   }
 
   return (
+    <>
+      <Button className="w-full" size="lg" onClick={handleGoogleSignIn} disabled={loading}>
+        Continue with Google
+        <ArrowRight className="ml-2 h-4 w-4" />
+      </Button>
+      {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+    </>
+  )
+}
+
+export default function SignInPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-xl">
         <div className="space-y-2 text-center">
@@ -61,11 +74,9 @@ export default function SignInPage() {
           <p className="text-sm text-muted-foreground">Use Google to continue to the dashboard.</p>
         </div>
         <div className="mt-8 space-y-3">
-          <Button className="w-full" size="lg" onClick={handleGoogleSignIn} disabled={loading}>
-            Continue with Google
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+          <Suspense fallback={<div className="flex w-full justify-center py-2"><Spinner /></div>}>
+            <SignInContent />
+          </Suspense>
         </div>
       </div>
     </div>
