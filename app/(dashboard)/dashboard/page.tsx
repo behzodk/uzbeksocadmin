@@ -10,20 +10,20 @@ async function getDashboardStats() {
   const [membersRes, eventsRes, newslettersRes] = await Promise.all([
     supabase.from("members").select("*", { count: "exact" }),
     supabase.from("events").select("*", { count: "exact" }),
-    supabase.from("newsletters").select("*", { count: "exact" }),
+    supabase.from("news").select("*", { count: "exact" }),
   ])
 
   const members = membersRes.data || []
   const events = eventsRes.data || []
-  const newsletters = newslettersRes.data || []
+  const news = newslettersRes.data || []
 
   return {
     totalMembers: membersRes.count || 0,
     activeMembers: members.filter((m) => m.status === "active").length,
     totalEvents: eventsRes.count || 0,
     upcomingEvents: events.filter((e) => e.status === "published" && new Date(e.start_date) > new Date()).length,
-    totalNewsletters: newslettersRes.count || 0,
-    sentNewsletters: newsletters.filter((n) => n.status === "sent").length,
+    totalNews: newslettersRes.count || 0,
+    sentNews: news.filter((n) => n.status === "published").length,
     recentEvents: events.slice(0, 5),
   }
 }
@@ -56,9 +56,9 @@ export default async function DashboardPage() {
           trend={{ value: 8, isPositive: true }}
         />
         <StatsCard
-          title="Newsletters"
-          value={stats.totalNewsletters}
-          subtitle={`${stats.sentNewsletters} sent`}
+          title="News"
+          value={stats.totalNews}
+          subtitle={`${stats.sentNews} published`}
           icon={Mail}
           trend={{ value: 5, isPositive: true }}
         />

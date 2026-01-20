@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "Events", icon: Calendar },
-  { href: "/dashboard/newsletters", label: "Newsletters", icon: Mail },
+  { href: "/dashboard/news", label: "News", icon: Mail },
 ]
 
 export function Sidebar() {

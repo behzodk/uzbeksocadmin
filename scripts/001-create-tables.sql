@@ -27,12 +27,12 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create newsletters table
-CREATE TABLE IF NOT EXISTS newsletters (
+-- Create news table
+CREATE TABLE IF NOT EXISTS news (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   subject VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
-  status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'sent')),
+  status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'published')),
   scheduled_at TIMESTAMP WITH TIME ZONE,
   sent_at TIMESTAMP WITH TIME ZONE,
   recipient_count INTEGER DEFAULT 0,
@@ -54,11 +54,11 @@ CREATE TABLE IF NOT EXISTS event_registrations (
 -- Enable Row Level Security
 ALTER TABLE members ENABLE ROW LEVEL SECURITY;
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE newsletters ENABLE ROW LEVEL SECURITY;
+ALTER TABLE news ENABLE ROW LEVEL SECURITY;
 ALTER TABLE event_registrations ENABLE ROW LEVEL SECURITY;
 
 -- Create policies for public access (adjust based on your auth requirements)
 CREATE POLICY "Allow all operations on members" ON members FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on events" ON events FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Allow all operations on newsletters" ON newsletters FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all operations on news" ON news FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all operations on event_registrations" ON event_registrations FOR ALL USING (true) WITH CHECK (true);

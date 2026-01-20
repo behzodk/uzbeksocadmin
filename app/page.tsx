@@ -38,7 +38,7 @@ export default async function LandingPage() {
                 Organization Management System
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                A centralized internal platform designed for authorized administrators to manage members, coordinate events, and distribute newsletters efficiently.
+                A centralized internal platform designed for authorized administrators to manage members, coordinate events, and distribute news efficiently.
               </p>
             </div>
 
@@ -68,7 +68,7 @@ export default async function LandingPage() {
                   <Mail className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Newsletter Campaigns</h3>
+                  <h3 className="font-semibold text-foreground">News Campaigns</h3>
                   <p className="text-sm text-muted-foreground">Draft and send updates to the entire organization.</p>
                 </div>
               </div>

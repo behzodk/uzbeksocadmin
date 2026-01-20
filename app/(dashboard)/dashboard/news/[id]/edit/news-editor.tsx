@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import type { Newsletter } from "@/lib/types"
+import type { News } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,35 +15,36 @@ import { ContentPreview } from "@/components/editor/content-preview"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ArrowLeft, Save, Eye, Edit3, Globe, Mail, Calendar, Users, Send, Loader2 } from "lucide-react"
 
-interface NewsletterEditorProps {
-  newsletter: Newsletter | null
+interface NewsEditorProps {
+  news: News | null
 }
 
-export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
+export function NewsEditor({ news }: NewsEditorProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("edit")
 
   const [formData, setFormData] = useState({
-    subject: newsletter?.subject || "",
-    slug: newsletter?.slug || "",
-    content: newsletter?.content || "",
-    content_html: newsletter?.content_html || "",
-    status: newsletter?.status || "draft",
-    scheduled_at: newsletter?.scheduled_at ? new Date(newsletter.scheduled_at).toISOString().slice(0, 16) : "",
-    recipient_count: newsletter?.recipient_count?.toString() || "0",
+    subject: news?.subject || "",
+    slug: news?.slug || "",
+    content: news?.content || "",
+    content_html: news?.content_html || "",
+    featured_image: news?.featured_image || "",
+    status: news?.status || "draft",
+    scheduled_at: news?.scheduled_at ? new Date(news.scheduled_at).toISOString().slice(0, 16) : "",
+    recipient_count: news?.recipient_count?.toString() || "0",
   })
 
   // Auto-generate slug from subject
   useEffect(() => {
-    if (!newsletter && formData.subject) {
+    if (!news && formData.subject) {
       const slug = formData.subject
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/(^-|-$)/g, "")
       setFormData((prev) => ({ ...prev, slug }))
     }
-  }, [formData.subject, newsletter])
+  }, [formData.subject, news])
 
   const handleSubmit = async () => {
     setIsLoading(true)
@@ -54,19 +55,20 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
       slug: formData.slug,
       content: formData.content,
       content_html: formData.content_html,
-      status: formData.status as Newsletter["status"],
+      featured_image: formData.featured_image || null,
+      status: formData.status as News["status"],
       scheduled_at: formData.scheduled_at || null,
       recipient_count: Number.parseInt(formData.recipient_count) || 0,
     }
 
-    if (newsletter) {
-      await supabase.from("newsletters").update(data).eq("id", newsletter.id)
+    if (news) {
+      await supabase.from("news").update(data).eq("id", news.id)
     } else {
-      await supabase.from("newsletters").insert(data)
+      await supabase.from("news").insert(data)
     }
 
     setIsLoading(false)
-    router.push("/dashboard/newsletters")
+    router.push("/dashboard/news")
     router.refresh()
   }
 
@@ -76,15 +78,15 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
       <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/newsletters")}>
+            <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/news")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <h1 className="text-xl font-semibold text-foreground">
-                {newsletter ? "Edit Newsletter" : "Create Newsletter"}
+                {news ? "Edit News" : "Create News"}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {newsletter ? `Editing: ${newsletter.subject}` : "Compose a new newsletter with rich content"}
+                {news ? `Editing: ${news.subject}` : "Create a new news update with rich content"}
               </p>
             </div>
           </div>
@@ -113,13 +115,13 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
               <SelectContent>
                 <SelectItem value="draft">Draft</SelectItem>
                 <SelectItem value="scheduled">Scheduled</SelectItem>
-                <SelectItem value="sent">Sent</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
               </SelectContent>
             </Select>
 
             <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              {newsletter ? "Update" : "Create"}
+              {news ? "Update" : "Create"}
             </Button>
           </div>
         </div>
@@ -135,17 +137,17 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="h-5 w-5" />
-                    Newsletter Details
+                    News Details
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="subject">Subject Line</Label>
+                    <Label htmlFor="subject">News Title</Label>
                     <Input
                       id="subject"
                       value={formData.subject}
                       onChange={(e) => setFormData((prev) => ({ ...prev, subject: e.target.value }))}
-                      placeholder="Enter email subject"
+                      placeholder="Enter news title"
                       className="text-lg"
                     />
                   </div>
@@ -159,9 +161,9 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
                       id="slug"
                       value={formData.slug}
                       onChange={(e) => setFormData((prev) => ({ ...prev, slug: e.target.value }))}
-                      placeholder="newsletter-url-slug"
+                      placeholder="news-url-slug"
                     />
-                    <p className="text-xs text-muted-foreground">/newsletters/{formData.slug || "your-slug"}</p>
+                    <p className="text-xs text-muted-foreground">/news/{formData.slug || "your-slug"}</p>
                   </div>
 
                   <div className="space-y-2">
@@ -174,19 +176,32 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
                       rows={2}
                     />
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="featured_image">Featured Image URL</Label>
+                    <Input
+                      id="featured_image"
+                      value={formData.featured_image}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, featured_image: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Optional. Used on the public news page and preview.
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle>Newsletter Content</CardTitle>
-                  <CardDescription>Use the rich text editor to create your newsletter content</CardDescription>
+                  <CardTitle>News Content</CardTitle>
+                  <CardDescription>Use the rich text editor to create your news content</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <RichTextEditor
                     value={formData.content_html}
                     onChange={(value) => setFormData((prev) => ({ ...prev, content_html: value }))}
-                    placeholder="Compose your newsletter here..."
+                    placeholder="Compose your news here..."
                     minHeight="500px"
                   />
                 </CardContent>
@@ -208,16 +223,16 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
                       <span className="text-muted-foreground">Status</span>
                       <span className="font-medium capitalize">{formData.status}</span>
                     </div>
-                    {newsletter?.sent_at && (
+                    {news?.sent_at && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Sent</span>
-                        <span className="font-medium">{new Date(newsletter.sent_at).toLocaleDateString()}</span>
+                        <span className="font-medium">{new Date(news.sent_at).toLocaleDateString()}</span>
                       </div>
                     )}
-                    {newsletter?.open_rate && (
+                    {news?.open_rate && (
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Open Rate</span>
-                        <span className="font-medium">{newsletter.open_rate}%</span>
+                        <span className="font-medium">{news.open_rate}%</span>
                       </div>
                     )}
                   </div>
@@ -262,7 +277,7 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
                       onChange={(e) => setFormData((prev) => ({ ...prev, recipient_count: e.target.value }))}
                       placeholder="0"
                     />
-                    <p className="text-xs text-muted-foreground">Number of subscribers to receive this newsletter</p>
+                    <p className="text-xs text-muted-foreground">Number of subscribers to receive this news</p>
                   </div>
                 </CardContent>
               </Card>
@@ -275,12 +290,21 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
               {/* Email Header */}
               <div className="bg-primary px-6 py-8 text-center">
                 <h1 className="text-2xl font-bold text-primary-foreground">
-                  {formData.subject || "Newsletter Subject"}
+                  {formData.subject || "News Subject"}
                 </h1>
               </div>
 
               {/* Email Body */}
               <CardContent className="p-8">
+                {formData.featured_image && (
+                  <div className="mb-6 overflow-hidden rounded-lg border bg-muted">
+                    <img
+                      src={formData.featured_image}
+                      alt={formData.subject || "News featured image"}
+                      className="h-64 w-full object-cover"
+                    />
+                  </div>
+                )}
                 {formData.content && (
                   <p className="text-muted-foreground italic mb-6 pb-6 border-b">{formData.content}</p>
                 )}
@@ -290,7 +314,7 @@ export function NewsletterEditor({ newsletter }: NewsletterEditorProps) {
 
               {/* Email Footer */}
               <div className="bg-muted/50 px-6 py-4 text-center text-sm text-muted-foreground">
-                <p>You received this email because you subscribed to our newsletter.</p>
+                <p>You received this email because you subscribed to our news.</p>
                 <p className="mt-1">
                   <a href="#" className="text-primary underline">
                     Unsubscribe

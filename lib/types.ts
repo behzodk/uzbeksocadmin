@@ -41,13 +41,14 @@ export interface Event {
   updated_at: string
 }
 
-export interface Newsletter {
+export interface News {
   id: string
   subject: string
   content: string
+  featured_image: string | null
   slug: string | null
   content_html: string | null
-  status: "draft" | "scheduled" | "sent"
+  status: "draft" | "scheduled" | "published"
   scheduled_at: string | null
   sent_at: string | null
   recipient_count: number
@@ -61,6 +62,6 @@ export interface DashboardStats {
   activeMembers: number
   totalEvents: number
   upcomingEvents: number
-  totalNewsletters: number
-  sentNewsletters: number
+  totalNews: number
+  sentNews: number
 }

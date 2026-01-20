@@ -5,52 +5,61 @@ import { Calendar, ArrowRight, Mail } from "lucide-react"
 import Link from "next/link"
 
 export const metadata = {
-  title: "Newsletters",
-  description: "Browse our past newsletters",
+  title: "News",
+  description: "Browse our past news",
 }
 
-export default async function NewslettersPage() {
+export default async function NewsPage() {
   const supabase = await getSupabaseServerClient()
 
-  const { data: newsletters } = await supabase
-    .from("newsletters")
+  const { data: news } = await supabase
+    .from("news")
     .select("*")
-    .in("status", ["sent", "scheduled"])
+    .in("status", ["published", "scheduled"])
     .order("created_at", { ascending: false })
 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto px-6 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Newsletters</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-4">News</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Stay updated with our latest news and insights
           </p>
         </div>
 
-        {newsletters && newsletters.length > 0 ? (
+        {news && news.length > 0 ? (
           <div className="space-y-4">
-            {newsletters.map((newsletter) => (
-              <Card key={newsletter.id} className="hover:shadow-md transition-shadow">
+            {news.map((news) => (
+              <Card key={news.id} className="hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-6 p-6">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Mail className="h-6 w-6 text-primary" />
+                  <div className="flex-shrink-0 w-16 h-16 rounded-lg bg-muted/40 overflow-hidden flex items-center justify-center">
+                    {news.featured_image ? (
+                      <img
+                        src={news.featured_image}
+                        alt={news.subject}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <Mail className="h-6 w-6 text-primary" />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-semibold mb-1 truncate">{newsletter.subject}</h3>
+                    <h3 className="text-lg font-semibold mb-1 truncate">{news.subject}</h3>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      {new Date(newsletter.created_at).toLocaleDateString("en-US", {
+                      {new Date(news.created_at).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </div>
-                    {newsletter.content && (
-                      <p className="text-sm text-muted-foreground mt-2 line-clamp-1">{newsletter.content}</p>
+                    {news.content && (
+                      <p className="text-sm text-muted-foreground mt-2 line-clamp-1">{news.content}</p>
                     )}
                   </div>
-                  <Link href={`/newsletters/${newsletter.slug}`}>
+                  <Link href={`/news/${news.slug}`}>
                     <Button variant="ghost" size="icon">
                       <ArrowRight className="h-5 w-5" />
                     </Button>
@@ -61,13 +70,13 @@ export default async function NewslettersPage() {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">No newsletters published yet.</p>
+            <p className="text-muted-foreground">No news published yet.</p>
           </div>
         )}
 
         <div className="mt-12 p-8 rounded-xl bg-muted/50 text-center">
           <h3 className="text-xl font-semibold mb-2">Never miss an update</h3>
-          <p className="text-muted-foreground mb-4">Subscribe to receive our newsletters directly in your inbox</p>
+          <p className="text-muted-foreground mb-4">Subscribe to receive our news directly in your inbox</p>
           <div className="flex max-w-md mx-auto gap-2">
             <input
               type="email"
