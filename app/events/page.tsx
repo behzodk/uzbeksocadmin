@@ -30,10 +30,10 @@ export default async function EventsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {events.map((event) => (
               <Card key={event.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                {event.featured_image && (
+                {(event.cover_image || event.featured_image) && (
                   <div className="aspect-video overflow-hidden">
                     <img
-                      src={event.featured_image || "/placeholder.svg"}
+                      src={event.cover_image || event.featured_image || "/placeholder.svg"}
                       alt={event.title}
                       className="w-full h-full object-cover"
                     />

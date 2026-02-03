@@ -24,6 +24,7 @@ export interface Event {
   description: string | null
   slug: string | null
   content_html: string | null
+  cover_image: string | null
   featured_image: string | null
   location: string | null
   start_date: string
@@ -55,6 +56,43 @@ export interface News {
   open_rate: number | null
   created_at: string
   updated_at: string
+}
+
+export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean"
+
+export interface FormField {
+  id: string
+  type: FormFieldType
+  label: string
+  key: string
+  required: boolean
+  options?: string[]
+  is_ranked?: boolean
+  order?: number
+  min_count?: number | null
+  max_count?: number | null
+}
+
+export interface FormSchema {
+  fields: FormField[]
+}
+
+export interface Form {
+  id: string
+  slug: string
+  title: string
+  is_active: boolean
+  schema: FormSchema
+  event_id: string | null
+  created_at: string
+}
+
+export interface FormSubmission {
+  id: string
+  form_id: string
+  status: string
+  answers: Record<string, unknown>
+  created_at: string
 }
 
 export interface DashboardStats {

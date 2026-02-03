@@ -44,10 +44,10 @@ export default async function EventPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      {event.featured_image && (
+      {(event.cover_image || event.featured_image) && (
         <div className="relative h-[40vh] min-h-[300px] overflow-hidden">
           <img
-            src={event.featured_image || "/placeholder.svg"}
+            src={event.cover_image || event.featured_image || "/placeholder.svg"}
             alt={event.title}
             className="w-full h-full object-cover"
           />

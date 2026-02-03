@@ -42,6 +42,7 @@ export function EventEditor({ event }: EventEditorProps) {
     visibility: event?.visibility || "private",
     event_type: event?.event_type || "other",
     is_featured: event?.is_featured || false,
+    cover_image: event?.cover_image || "",
     featured_image: event?.featured_image || "",
     image_url: event?.image_url || "",
     highlights: event?.highlights || [],
@@ -77,6 +78,7 @@ export function EventEditor({ event }: EventEditorProps) {
       visibility: formData.visibility as Event["visibility"],
       event_type: formData.event_type,
       is_featured: formData.is_featured,
+      cover_image: formData.cover_image || null,
       featured_image: formData.featured_image || null,
       image_url: formData.image_url || null,
       highlights: formData.highlights,
@@ -520,12 +522,42 @@ export function EventEditor({ event }: EventEditorProps) {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <ImageIcon className="h-5 w-5" />
+                    Cover Image
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cover_image">Cover Image URL</Label>
+                    <Input
+                      id="cover_image"
+                      value={formData.cover_image}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, cover_image: e.target.value }))}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                  </div>
+
+                  {formData.cover_image && (
+                    <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+                      <img
+                        src={formData.cover_image || "/placeholder.svg"}
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5" />
                     Featured Image
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="featured_image">Image URL</Label>
+                    <Label htmlFor="featured_image">Featured Image URL</Label>
                     <Input
                       id="featured_image"
                       value={formData.featured_image}
@@ -551,10 +583,10 @@ export function EventEditor({ event }: EventEditorProps) {
           /* Preview Mode */
           <Card className="max-w-4xl mx-auto">
             <CardContent className="p-8">
-              {formData.featured_image && (
+              {(formData.cover_image || formData.featured_image) && (
                 <div className="aspect-video rounded-lg overflow-hidden bg-muted mb-8">
                   <img
-                    src={formData.featured_image || "/placeholder.svg"}
+                    src={formData.cover_image || formData.featured_image || "/placeholder.svg"}
                     alt={formData.title}
                     className="w-full h-full object-cover"
                   />
