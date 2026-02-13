@@ -58,7 +58,12 @@ export interface News {
   updated_at: string
 }
 
-export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean"
+export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean" | "rating"
+
+export interface FieldConditional {
+  field_key: string
+  option: string
+}
 
 export interface FormField {
   id: string
@@ -71,6 +76,14 @@ export interface FormField {
   order?: number
   min_count?: number | null
   max_count?: number | null
+  scale_min?: number | null
+  scale_max?: number | null
+  scale_type?: "numeric" | "stars"
+  allow_float?: boolean
+  min_label?: string | null
+  max_label?: string | null
+  conditional?: FieldConditional
+  is_student_email?: boolean
 }
 
 export interface FormSchema {

@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Plus, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Plus, Trash2, Star } from "lucide-react"
 
 interface EventOption {
   id: string
@@ -32,6 +32,7 @@ const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: "select", label: "Select" },
   { value: "multi_select", label: "Multi Select" },
   { value: "boolean", label: "Boolean" },
+  { value: "rating", label: "Rating" },
 ]
 
 const createFieldId = () => {
@@ -51,12 +52,21 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
   if (!schema || !Array.isArray(schema.fields)) {
     return { fields: [] }
   }
-  const normalized = schema.fields.map((field) => ({
-    ...field,
-    id: field.id || createFieldId(),
-    required: Boolean(field.required),
-    order: typeof field.order === "number" ? field.order : undefined,
-  }))
+  const normalized = schema.fields.map((field) => {
+    const conditional =
+      field && typeof field === "object" && "conditional" in field ? (field as FormField).conditional : undefined
+
+    return {
+      ...field,
+      id: field.id || createFieldId(),
+      required: Boolean(field.required),
+      order: typeof field.order === "number" ? field.order : undefined,
+      conditional:
+        conditional && conditional.field_key && conditional.option
+          ? { field_key: conditional.field_key, option: conditional.option }
+          : undefined,
+    }
+  })
   return {
     fields: normalized.sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
   }
@@ -77,6 +87,37 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   })
 
   const [fields, setFields] = useState<FormField[]>(() => normalizeSchema(form?.schema).fields)
+  const [previewValues, setPreviewValues] = useState<Record<string, string | boolean | string[] | number>>({})
+
+  const trimOptions = (options?: string[]) => (options || []).map((opt) => opt.trim()).filter(Boolean)
+
+  const ensureValidConditionals = (nextFields: FormField[]) =>
+    nextFields.map((field, index) => {
+      if (!field.conditional) return field
+
+      const parentIndex = nextFields.findIndex(
+        (candidate, candidateIndex) => candidateIndex < index && candidate.key === field.conditional?.field_key
+      )
+      const parent = parentIndex >= 0 ? nextFields[parentIndex] : null
+      const option = field.conditional?.option?.trim() || ""
+      const parentKey = parent?.key?.trim() || ""
+      const parentOptions = trimOptions(parent?.options)
+
+      if (!parent || parent.type !== "select" || !parentKey || !option || !parentOptions.includes(option)) {
+        const { conditional: _ignored, ...rest } = field
+        return { ...rest }
+      }
+
+      return { ...field, conditional: { field_key: parentKey, option } }
+    })
+
+  const updateFields = (updater: (prev: FormField[]) => FormField[]) => {
+    setFields((prev) => ensureValidConditionals(updater(prev)))
+  }
+
+  useEffect(() => {
+    setFields((prev) => ensureValidConditionals(prev))
+  }, [])
 
   useEffect(() => {
     if (!form && formMeta.title && !formMeta.slug) {
@@ -103,6 +144,15 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         order: index + 1,
         min_count: field.min_count ?? null,
         max_count: field.max_count ?? null,
+        scale_min: field.scale_min ?? null,
+        scale_max: field.scale_max ?? null,
+        scale_type: field.scale_type || null,
+        allow_float: field.allow_float ?? false,
+        min_label: field.min_label ?? null,
+        max_label: field.max_label ?? null,
+
+        conditional: field.conditional || null,
+        is_student_email: field.is_student_email || false,
       })),
     })
   }, [fields, formMeta.event_id, formMeta.is_active, formMeta.slug, formMeta.title])
@@ -157,9 +207,22 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   }, [isDirty])
 
   const fieldsPreview = useMemo(() => fields.filter((field) => field.label && field.key), [fields])
+  const visiblePreviewFields = useMemo(() => {
+    return fieldsPreview.filter((field) => {
+      if (!field.conditional) return true
+      const currentIndex = fields.findIndex((candidate) => candidate.id === field.id)
+      const parentIndex = fields.findIndex(
+        (candidate, candidateIndex) =>
+          candidateIndex < currentIndex && candidate.key === field.conditional?.field_key
+      )
+      if (parentIndex === -1) return false
+      const selectedValue = previewValues[field.conditional.field_key]
+      return selectedValue === field.conditional.option
+    })
+  }, [fields, fieldsPreview, previewValues])
 
   const handleAddField = () => {
-    setFields((prev) => [
+    updateFields((prev) => [
       ...prev,
       {
         id: createFieldId(),
@@ -169,18 +232,34 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         required: false,
         is_ranked: false,
         min_count: null,
-        max_count: null,
+        max_count: 255,
         options: [],
       },
     ])
   }
 
+  const handlePreviewSelectChange = (key: string, value: string) => {
+    setPreviewValues((prev) => {
+      const next = { ...prev, [key]: value }
+      fields.forEach((field) => {
+        if (field.conditional?.field_key === key && field.conditional.option !== value) {
+          delete next[field.key]
+        }
+      })
+      return next
+    })
+  }
+
+  const handlePreviewRatingChange = (key: string, value: number) => {
+    setPreviewValues((prev) => ({ ...prev, [key]: value }))
+  }
+
   const handleUpdateField = (index: number, updates: Partial<FormField>) => {
-    setFields((prev) => prev.map((field, i) => (i === index ? { ...field, ...updates } : field)))
+    updateFields((prev) => prev.map((field, i) => (i === index ? { ...field, ...updates } : field)))
   }
 
   const handleInsertFieldAfter = (index: number) => {
-    setFields((prev) => {
+    updateFields((prev) => {
       const next = [...prev]
       next.splice(index + 1, 0, {
         id: createFieldId(),
@@ -190,7 +269,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         required: false,
         is_ranked: false,
         min_count: null,
-        max_count: null,
+        max_count: 255,
         options: [],
       })
       return next
@@ -198,11 +277,11 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   }
 
   const handleRemoveField = (index: number) => {
-    setFields((prev) => prev.filter((_, i) => i !== index))
+    updateFields((prev) => prev.filter((_, i) => i !== index))
   }
 
   const moveField = (fromIndex: number, toIndex: number) => {
-    setFields((prev) => {
+    updateFields((prev) => {
       if (toIndex < 0 || toIndex >= prev.length) return prev
       const next = [...prev]
       const [moved] = next.splice(fromIndex, 1)
@@ -217,14 +296,15 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     if (fields.length === 0) return "Add at least one field to the form."
 
     const keys = new Set<string>()
-    for (const field of fields) {
+    for (let index = 0; index < fields.length; index += 1) {
+      const field = fields[index]
       if (!field.label.trim()) return "Every field must have a label."
       if (!field.key.trim()) return "Every field must have a key."
       if (keys.has(field.key.trim())) return `Duplicate field key: ${field.key}`
       keys.add(field.key.trim())
 
       if (field.type === "select" || field.type === "multi_select") {
-        const trimmedOptions = (field.options || []).map((option) => option.trim()).filter(Boolean)
+        const trimmedOptions = trimOptions(field.options)
         if (trimmedOptions.length === 0) {
           return "Select and multi-select fields must have at least one option."
         }
@@ -236,6 +316,41 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         if (min !== null && min < 0) return "Text min_count must be 0 or greater."
         if (max !== null && max < 0) return "Text max_count must be 0 or greater."
         if (min !== null && max !== null && min > max) return "Text min_count cannot exceed max_count."
+      }
+
+      if (field.type === "rating") {
+        const min = field.scale_min ?? null
+        const max = field.scale_max ?? null
+        if (min === null || max === null || Number.isNaN(min) || Number.isNaN(max))
+          return `Rating field "${field.label || field.key}" needs numeric scale min and max.`
+        if (min >= max) return `Rating scale min must be less than max for "${field.label || field.key}".`
+        if (!field.scale_type) return `Choose a scale type for rating field "${field.label || field.key}".`
+      }
+
+      if (field.conditional) {
+        const parentIndex = fields.findIndex(
+          (candidate, candidateIndex) =>
+            candidateIndex < index &&
+            candidate.key.trim() === field.conditional?.field_key.trim()
+        )
+        if (parentIndex === -1) {
+          return `Conditional field "${field.label}" must depend on a select field above it.`
+        }
+
+        const parent = fields[parentIndex]
+        if (parent.type !== "select") {
+          return `Conditional field "${field.label}" must depend on a select field above it.`
+        }
+
+        const parentOptions = trimOptions(parent.options)
+        const optionValue = field.conditional.option?.trim()
+        if (!optionValue) {
+          return `Choose the option that reveals "${field.label}".`
+        }
+
+        if (!parentOptions.includes(optionValue)) {
+          return `Conditional option for "${field.label}" must be one of "${parent.label}" options.`
+        }
       }
     }
 
@@ -254,9 +369,10 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     }
 
     const cleanedFields: FormField[] = fields.map((field, index) => {
-      const options =
-        field.type === "select" || field.type === "multi_select"
-          ? (field.options || []).map((opt) => opt.trim()).filter(Boolean)
+      const options = field.type === "select" || field.type === "multi_select" ? trimOptions(field.options) : undefined
+      const conditional =
+        field.conditional && field.conditional.field_key && field.conditional.option
+          ? { field_key: field.conditional.field_key.trim(), option: field.conditional.option.trim() }
           : undefined
       return {
         ...field,
@@ -267,6 +383,21 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         order: index + 1,
         min_count: field.type === "text" ? field.min_count ?? null : undefined,
         max_count: field.type === "text" ? field.max_count ?? null : undefined,
+        scale_min: field.type === "rating" ? field.scale_min ?? null : undefined,
+        scale_max: field.type === "rating" ? field.scale_max ?? null : undefined,
+        scale_type: field.type === "rating" ? field.scale_type ?? "numeric" : undefined,
+        allow_float: field.type === "rating" ? Boolean(field.allow_float) : undefined,
+        min_label:
+          field.type === "rating"
+            ? (field.min_label ?? "").trim() || null
+            : undefined,
+
+        max_label:
+          field.type === "rating"
+            ? (field.max_label ?? "").trim() || null
+            : undefined,
+        conditional,
+        is_student_email: field.type === "email" ? Boolean(field.is_student_email) : undefined,
       }
     })
 
@@ -402,20 +533,20 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                       <SelectTrigger id="form-event">
                         <SelectValue placeholder="No event linked" />
                       </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No event</SelectItem>
-                      {events.map((event) => {
-                        const isTaken = linkedEventIds.includes(event.id) && event.id !== form?.event_id
-                        return (
-                          <SelectItem key={event.id} value={event.id} disabled={isTaken}>
-                            {event.title}
-                            {isTaken ? " (already used)" : ""}
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      <SelectContent>
+                        <SelectItem value="none">No event</SelectItem>
+                        {events.map((event) => {
+                          const isTaken = linkedEventIds.includes(event.id) && event.id !== form?.event_id
+                          return (
+                            <SelectItem key={event.id} value={event.id} disabled={isTaken}>
+                              {event.title}
+                              {isTaken ? " (already used)" : ""}
+                            </SelectItem>
+                          )
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
                       <Label htmlFor="form-active" className="text-sm font-medium">
@@ -448,169 +579,398 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {fields.map((field, index) => (
-                      <Card key={field.id} className="border-dashed">
-                        <CardContent className="space-y-4 pt-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Move field up"
-                                onClick={() => moveField(index, index - 1)}
-                                disabled={index === 0}
-                              >
-                                <ArrowUp className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                aria-label="Move field down"
-                                onClick={() => moveField(index, index + 1)}
-                                disabled={index === fields.length - 1}
-                              >
-                                <ArrowDown className="h-4 w-4" />
-                              </Button>
-                              <p className="text-sm font-semibold">Field {index + 1}</p>
-                            </div>
-                            <Button variant="ghost" size="icon" onClick={() => handleRemoveField(index)}>
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
+                    {fields.map((field, index) => {
+                      const selectAncestors = fields
+                        .slice(0, index)
+                        .filter((candidate) => candidate.type === "select" && candidate.key.trim())
+                      const selectAncestorsWithOptions = selectAncestors.filter(
+                        (candidate) => trimOptions(candidate.options).length > 0
+                      )
+                      const currentConditionalParent = field.conditional
+                        ? selectAncestors.find((candidate) => candidate.key === field.conditional?.field_key)
+                        : undefined
+                      const conditionalOptions = currentConditionalParent ? trimOptions(currentConditionalParent.options) : []
+                      const canBeConditional = selectAncestors.length > 0
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Label</Label>
-                              <Input
-                                value={field.label}
-                                onChange={(e) => {
-                                  const label = e.target.value
-                                  handleUpdateField(index, {
-                                    label,
-                                    key: field.key ? field.key : slugify(label),
-                                  })
-                                }}
-                                placeholder="Full name"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Key</Label>
-                              <Input
-                                value={field.key}
-                                onChange={(e) => handleUpdateField(index, { key: e.target.value })}
-                                placeholder="full_name"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-3">
-                            <div className="space-y-2">
-                              <Label>Type</Label>
-                              <Select
-                                value={field.type}
-                                onValueChange={(value: FormFieldType) =>
-                                  handleUpdateField(index, {
-                                    type: value,
-                                    options: value === "select" || value === "multi_select" ? field.options || [] : [],
-                                    is_ranked: value === "multi_select" ? field.is_ranked ?? false : false,
-                                    min_count: value === "text" ? field.min_count ?? null : null,
-                                    max_count: value === "text" ? field.max_count ?? null : null,
-                                  })
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {FIELD_TYPES.map((option) => (
-                                    <SelectItem key={option.value} value={option.value}>
-                                      {option.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
-                              <div>
-                                <Label className="text-sm font-medium">Required</Label>
-                                <p className="text-xs text-muted-foreground">Field must be completed</p>
+                      return (
+                        <Card key={field.id} className="border-dashed">
+                          <CardContent className="space-y-4 pt-6">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Move field up"
+                                  onClick={() => moveField(index, index - 1)}
+                                  disabled={index === 0}
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="Move field down"
+                                  onClick={() => moveField(index, index + 1)}
+                                  disabled={index === fields.length - 1}
+                                >
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                                <p className="text-sm font-semibold">Field {index + 1}</p>
                               </div>
-                              <Switch
-                                checked={field.required}
-                                onCheckedChange={(checked) => handleUpdateField(index, { required: checked })}
-                              />
+                              <Button variant="ghost" size="icon" onClick={() => handleRemoveField(index)}>
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
                             </div>
-                          </div>
 
-                          {field.type === "text" && (
                             <div className="grid gap-4 md:grid-cols-2">
                               <div className="space-y-2">
-                                <Label>Min Count</Label>
+                                <Label>Label</Label>
                                 <Input
-                                  type="number"
-                                  min="0"
-                                  value={field.min_count ?? ""}
-                                  onChange={(e) =>
-                                    handleUpdateField(index, {
-                                      min_count: e.target.value === "" ? null : Number(e.target.value),
-                                    })
-                                  }
-                                  placeholder="0"
+                                  value={field.label}
+                                  onChange={(e) => {
+                                    const label = e.target.value
+                                    const updates: Partial<FormField> = { label }
+
+                                    // Auto-serialize key if it matches the previous label's slug or is empty
+                                    // This allows users to lock the key by manually editing it to something else
+                                    const currentSlug = slugify(field.label)
+                                    if (!field.key || field.key === currentSlug) {
+                                      updates.key = slugify(label)
+                                    }
+
+                                    if (field.type === "text" && label.toLowerCase().includes("email")) {
+                                      updates.type = "email"
+                                    }
+
+                                    handleUpdateField(index, updates)
+                                  }}
+                                  placeholder="Full name"
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Max Count</Label>
+                                <Label>Key</Label>
                                 <Input
-                                  type="number"
-                                  min="0"
-                                  value={field.max_count ?? ""}
-                                  onChange={(e) =>
-                                    handleUpdateField(index, {
-                                      max_count: e.target.value === "" ? null : Number(e.target.value),
-                                    })
-                                  }
-                                  placeholder="100"
+                                  value={field.key}
+                                  onChange={(e) => handleUpdateField(index, { key: e.target.value })}
+                                  placeholder="full_name"
                                 />
                               </div>
                             </div>
-                          )}
 
-                          {(field.type === "select" || field.type === "multi_select") && (
-                            <div className="space-y-2">
-                              <Label>Options (one per line)</Label>
-                              <Textarea
-                                value={(field.options || []).join("\n")}
-                                onChange={(e) =>
-                                  handleUpdateField(index, {
-                                    options: e.target.value.split("\n"),
-                                  })
-                                }
-                                placeholder={"Option A\nOption B\nOption C"}
-                                rows={4}
-                              />
-                              {field.type === "multi_select" && (
-                                <div className="flex items-center justify-between rounded-lg border p-3">
-                                  <div>
-                                    <Label className="text-sm font-medium">Ranked Selection</Label>
-                                    <p className="text-xs text-muted-foreground">Respondents order their choices</p>
-                                  </div>
-                                  <Switch
-                                    checked={Boolean(field.is_ranked)}
-                                    onCheckedChange={(checked) => handleUpdateField(index, { is_ranked: checked })}
+                            <div className="grid gap-4 md:grid-cols-3">
+                              <div className="space-y-2">
+                                <Label>Type</Label>
+                                <Select
+                                  value={field.type}
+                                  onValueChange={(value: FormFieldType) =>
+                                    handleUpdateField(index, {
+                                      type: value,
+                                      options: value === "select" || value === "multi_select" ? field.options || [] : [],
+                                      is_ranked: value === "multi_select" ? field.is_ranked ?? false : false,
+                                      min_count: value === "text" ? field.min_count ?? null : null,
+                                      max_count: value === "text" ? field.max_count ?? null : null,
+                                      scale_min: value === "rating" ? field.scale_min ?? 1 : undefined,
+                                      scale_max: value === "rating" ? field.scale_max ?? 5 : undefined,
+                                      scale_type: value === "rating" ? field.scale_type ?? "numeric" : undefined,
+                                      allow_float: value === "rating" ? field.allow_float ?? false : undefined,
+                                      min_label: value === "rating" ? field.min_label ?? "" : undefined,
+                                      max_label: value === "rating" ? field.max_label ?? "" : undefined,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {FIELD_TYPES.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
+                                <div>
+                                  <Label className="text-sm font-medium">Required</Label>
+                                  <p className="text-xs text-muted-foreground">Field must be completed</p>
+                                </div>
+                                <Switch
+                                  checked={field.required}
+                                  onCheckedChange={(checked) => handleUpdateField(index, { required: checked })}
+                                />
+                              </div>
+                            </div>
+
+                            {field.type === "text" && (
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label>Min Count</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={field.min_count ?? ""}
+                                    onChange={(e) =>
+                                      handleUpdateField(index, {
+                                        min_count: e.target.value === "" ? null : Number(e.target.value),
+                                      })
+                                    }
+                                    placeholder="0"
                                   />
                                 </div>
+                                <div className="space-y-2">
+                                  <Label>Max Count</Label>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    value={field.max_count ?? ""}
+                                    onChange={(e) =>
+                                      handleUpdateField(index, {
+                                        max_count: e.target.value === "" ? null : Number(e.target.value),
+                                      })
+                                    }
+                                    placeholder="100"
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {field.type === "email" && (
+                              <div className="flex items-center gap-2 rounded-lg border p-3">
+                                <div>
+                                  <Label className="text-sm font-medium">Student Email Only</Label>
+                                  <p className="text-xs text-muted-foreground">Restrict to @student.bham.ac.uk addresses</p>
+                                </div>
+                                <Switch
+                                  checked={Boolean(field.is_student_email)}
+                                  onCheckedChange={(checked) => handleUpdateField(index, { is_student_email: checked })}
+                                />
+                              </div>
+                            )}
+
+                            {(field.type === "select" || field.type === "multi_select") && (
+                              <div className="space-y-2">
+                                <Label>Options (one per line)</Label>
+                                <Textarea
+                                  value={(field.options || []).join("\n")}
+                                  onChange={(e) =>
+                                    handleUpdateField(index, {
+                                      options: e.target.value.split("\n"),
+                                    })
+                                  }
+                                  placeholder={"Option A\nOption B\nOption C"}
+                                  rows={4}
+                                />
+                                {field.type === "multi_select" && (
+                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                      <Label className="text-sm font-medium">Ranked Selection</Label>
+                                      <p className="text-xs text-muted-foreground">Respondents order their choices</p>
+                                    </div>
+                                    <Switch
+                                      checked={Boolean(field.is_ranked)}
+                                      onCheckedChange={(checked) => handleUpdateField(index, { is_ranked: checked })}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {field.type === "rating" && (
+                              <div className="space-y-4">
+                                <div className="grid gap-4 md:grid-cols-3">
+                                  <div className="space-y-2">
+                                    <Label>Scale Min</Label>
+                                    <Input
+                                      type="number"
+                                      value={field.scale_min ?? 1}
+                                      onChange={(e) =>
+                                        handleUpdateField(index, {
+                                          scale_min: e.target.value === "" ? null : Number(e.target.value),
+                                        })
+                                      }
+                                      placeholder="1"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Scale Max</Label>
+                                    <Input
+                                      type="number"
+                                      value={field.scale_max ?? 5}
+                                      onChange={(e) =>
+                                        handleUpdateField(index, {
+                                          scale_max: e.target.value === "" ? null : Number(e.target.value),
+                                        })
+                                      }
+                                      placeholder="5"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Scale Type</Label>
+                                    <Select
+                                      value={field.scale_type || "numeric"}
+                                      onValueChange={(value) =>
+                                        handleUpdateField(index, {
+                                          scale_type: value as "numeric" | "stars",
+                                          allow_float: value === "numeric" ? field.allow_float ?? false : false,
+                                        })
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="numeric">Numeric</SelectItem>
+                                        <SelectItem value="stars">Stars</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                {field.scale_type === "numeric" && (
+                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                      <Label className="text-sm font-medium">Allow decimals</Label>
+                                      <p className="text-xs text-muted-foreground">Let respondents submit fractional values.</p>
+                                    </div>
+                                    <Switch
+                                      checked={Boolean(field.allow_float)}
+                                      onCheckedChange={(checked) => handleUpdateField(index, { allow_float: checked })}
+                                    />
+                                  </div>
+                                )}
+
+                                <div className="grid gap-4 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Min Label (optional)</Label>
+                                    <Input
+                                      value={field.min_label ?? ""}
+                                      onChange={(e) => handleUpdateField(index, { min_label: e.target.value })}
+                                      placeholder="Poor"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Max Label (optional)</Label>
+                                    <Input
+                                      value={field.max_label ?? ""}
+                                      onChange={(e) => handleUpdateField(index, { max_label: e.target.value })}
+                                      placeholder="Excellent"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div className="rounded-lg border p-3 space-y-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <Label className="text-sm font-medium">Conditional visibility</Label>
+                                  <p className="text-xs text-muted-foreground">
+                                    {canBeConditional
+                                      ? "Show this field only when a select option above is chosen."
+                                      : "Add a select field above (not multi-select) to enable conditions."}
+                                  </p>
+                                </div>
+                                <Switch
+                                  disabled={!selectAncestorsWithOptions.length}
+                                  checked={Boolean(field.conditional)}
+                                  onCheckedChange={(checked) => {
+                                    if (!checked) {
+                                      handleUpdateField(index, { conditional: undefined })
+                                      return
+                                    }
+                                    const parent = selectAncestorsWithOptions[0]
+                                    const parentOptions = trimOptions(parent?.options)
+                                    const firstOption = parentOptions[0]
+                                    handleUpdateField(index, {
+                                      conditional:
+                                        parent && parent.key && firstOption
+                                          ? { field_key: parent.key.trim(), option: firstOption }
+                                          : undefined,
+                                    })
+                                  }}
+                                />
+                              </div>
+
+                              {field.conditional && canBeConditional && (
+                                <div className="grid gap-3 md:grid-cols-2">
+                                  <div className="space-y-2">
+                                    <Label>Depends on select</Label>
+                                    <Select
+                                      value={currentConditionalParent?.key || field.conditional.field_key}
+                                      onValueChange={(value) => {
+                                        const parent = selectAncestors.find((candidate) => candidate.key === value)
+                                        const parentOptions = trimOptions(parent?.options)
+                                        const defaultOption = parentOptions[0]
+                                        handleUpdateField(index, {
+                                          conditional:
+                                            parent && defaultOption ? { field_key: value, option: defaultOption } : undefined,
+                                        })
+                                      }}
+                                      disabled={!selectAncestorsWithOptions.length}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select field above" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {selectAncestors.map((candidate) => (
+                                          <SelectItem key={candidate.id} value={candidate.key}>
+                                            {candidate.label || candidate.key}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label>Show when option is</Label>
+                                    <Select
+                                      value={field.conditional?.option}
+                                      onValueChange={(value) =>
+                                        handleUpdateField(index, {
+                                          conditional: field.conditional
+                                            ? { field_key: field.conditional.field_key, option: value }
+                                            : undefined,
+                                        })
+                                      }
+                                      disabled={!conditionalOptions.length}
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select option" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {conditionalOptions.map((option) => (
+                                          <SelectItem key={option} value={option}>
+                                            {option}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {!conditionalOptions.length && (
+                                      <p className="text-xs text-muted-foreground">
+                                        Add at least one option to the selected parent field.
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {!selectAncestorsWithOptions.length && canBeConditional && (
+                                <p className="text-xs text-muted-foreground">
+                                  Add options to the select field above to enable conditions.
+                                </p>
                               )}
                             </div>
-                          )}
-                          <div className="flex justify-end">
-                            <Button variant="outline" size="sm" onClick={() => handleInsertFieldAfter(index)}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add field below
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
+
+                            <div className="flex justify-end">
+                              <Button variant="outline" size="sm" onClick={() => handleInsertFieldAfter(index)}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add field below
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -633,8 +993,14 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                     Add fields to see a preview.
                   </div>
                 ) : (
-                  fieldsPreview.map((field) => {
-                    const previewOptions = (field.options || []).map((option) => option.trim()).filter(Boolean)
+                  visiblePreviewFields.map((field) => {
+                    const previewOptions = trimOptions(field.options)
+                    const selectValue = typeof previewValues[field.key] === "string" ? (previewValues[field.key] as string) : undefined
+                    const ratingValue =
+                      typeof previewValues[field.key] === "number" ? (previewValues[field.key] as number) : undefined
+                    const ratingMin = Number.isFinite(field.scale_min) ? (field.scale_min as number) : 1
+                    const ratingMax = Number.isFinite(field.scale_max) ? (field.scale_max as number) : 5
+                    const ratingStep = field.allow_float ? 0.1 : 1
                     return (
                       <div key={field.id} className="space-y-2">
                         <Label className="flex items-center gap-2">
@@ -644,7 +1010,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                         {field.type === "text" && <Input placeholder={field.label} />}
                         {field.type === "email" && <Input type="email" placeholder="name@example.com" />}
                         {field.type === "select" && (
-                          <Select>
+                          <Select value={selectValue} onValueChange={(value) => handlePreviewSelectChange(field.key, value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select an option" />
                             </SelectTrigger>
@@ -667,6 +1033,43 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                             ))}
                           </div>
                         )}
+                        {field.type === "rating" && (
+                          <div className="space-y-2">
+                            {field.scale_type === "stars" ? (
+                              <div className="flex items-center gap-1">
+                                {Array.from({ length: Math.max(1, Math.min(15, ratingMax - ratingMin + 1)) }).map((_, starIndex) => {
+                                  const value = ratingMin + starIndex
+                                  const filled = (ratingValue ?? 0) >= value
+                                  return (
+                                    <Star
+                                      key={value}
+                                      className={`h-5 w-5 ${filled ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            ) : (
+                              <Input
+                                type="number"
+                                step={ratingStep}
+                                min={ratingMin}
+                                max={ratingMax}
+                                value={ratingValue ?? ""}
+                                placeholder={`${ratingMin} – ${ratingMax}`}
+                                onChange={(e) => {
+                                  const next = e.target.value === "" ? undefined : Number(e.target.value)
+                                  if (next === undefined || Number.isFinite(next)) handlePreviewRatingChange(field.key, next ?? ratingMin)
+                                }}
+                              />
+                            )}
+                            {(field.min_label || field.max_label) && (
+                              <div className="flex justify-between text-xs text-muted-foreground">
+                                <span>{field.min_label}</span>
+                                <span>{field.max_label}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {field.type === "boolean" && (
                           <div className="flex items-center gap-2">
                             <Switch checked={false} />
@@ -682,6 +1085,6 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
           </Card>
         )}
       </div>
-    </div>
+    </div >
   )
 }

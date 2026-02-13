@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { Button } from "@/components/ui/button"
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts"
-import { Activity, Calendar, Inbox, ArrowLeft } from "lucide-react"
+import { Activity, Calendar, Inbox, ArrowLeft, Download } from "lucide-react"
 import Link from "next/link"
 
 interface FormResponsesClientProps {
@@ -90,7 +90,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
           option,
           count: values.filter((value) => value === option).length,
         }))
-        return { field, type: "select", counts }
+        return { field, type: "select" as const, counts }
       }
 
       if (field.type === "multi_select") {
@@ -115,14 +115,14 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
             })
           })
 
-          return { field, type: "ranked", rankCounts, maxRank, values, options }
+          return { field, type: "ranked" as const, rankCounts, maxRank, values, options }
         }
 
         const counts = options.map((option) => ({
           option,
           count: values.filter((value) => Array.isArray(value) && value.includes(option)).length,
         }))
-        return { field, type: "multi_select", counts }
+        return { field, type: "multi_select" as const, counts }
       }
 
       if (field.type === "boolean") {
@@ -130,7 +130,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
         const falseCount = values.filter((value) => value === false).length
         return {
           field,
-          type: "boolean",
+          type: "boolean" as const,
           counts: [
             { option: "True", count: trueCount },
             { option: "False", count: falseCount },
@@ -138,9 +138,32 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
         }
       }
 
+      if (field.type === "rating") {
+        const numericValues = values
+          .map((value) => (typeof value === "number" ? value : Number(value)))
+          .filter((value) => Number.isFinite(value)) as number[]
+
+        const countsMap = new Map<number, number>()
+        numericValues.forEach((value) => {
+          countsMap.set(value, (countsMap.get(value) || 0) + 1)
+        })
+
+        const counts = Array.from(countsMap.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([value, count]) => ({ value, count }))
+
+        const average =
+          numericValues.length > 0 ? numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length : null
+
+        const min = numericValues.length > 0 ? Math.min(...numericValues) : null
+        const max = numericValues.length > 0 ? Math.max(...numericValues) : null
+
+        return { field, type: "rating" as const, counts, average, min, max }
+      }
+
       return {
         field,
-        type: "text",
+        type: "text" as const,
         total: values.length,
       }
     })
@@ -229,6 +252,98 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
       })
   }, [analytics])
 
+  const handleExport = async () => {
+    try {
+      const ExcelJSModule = await import("exceljs")
+      // @ts-ignore
+      const ExcelJS = ExcelJSModule.default || ExcelJSModule
+      const FileSaverModule = await import("file-saver")
+      // @ts-ignore
+      const saveAs = FileSaverModule.default || FileSaverModule.saveAs || FileSaverModule
+
+      // @ts-ignore
+      const workbook = new ExcelJS.Workbook()
+      const worksheet = workbook.addWorksheet("Responses")
+
+      const fields = form.schema?.fields || []
+
+      // Define columns
+      const columns = [
+        { header: "Submitted At", key: "submittedAt", width: 20 },
+        { header: "Status", key: "status", width: 15 },
+        ...fields.map((field) => ({ header: field.label, key: field.key, width: 25 })),
+      ]
+
+      worksheet.columns = columns
+
+      // Add rows
+      responses.forEach((response) => {
+        const rowData: Record<string, any> = {
+          submittedAt: new Date(response.created_at).toLocaleString(),
+          status: response.status,
+        }
+
+        fields.forEach((field) => {
+          const value = response.answers?.[field.key]
+          if (Array.isArray(value)) {
+            rowData[field.key] = value.join(", ")
+          } else {
+            rowData[field.key] = value ?? ""
+          }
+        })
+
+        worksheet.addRow(rowData)
+      })
+
+      // Style header row
+      const headerRow = worksheet.getRow(1)
+      headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } }
+      headerRow.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0EA5E9" },
+      }
+      headerRow.alignment = { horizontal: "center", vertical: "middle" }
+
+      // Borders for all cells
+      worksheet.eachRow((row: any) => {
+        row.eachCell((cell: any) => {
+          cell.border = {
+            top: { style: "thin" },
+            left: { style: "thin" },
+            bottom: { style: "thin" },
+            right: { style: "thin" },
+          }
+        })
+      })
+
+      // Freeze first row
+      worksheet.views = [{ state: "frozen", xSplit: 0, ySplit: 1 }]
+
+      // Auto filter
+      worksheet.autoFilter = {
+        from: {
+          row: 1,
+          column: 1,
+        },
+        to: {
+          row: 1,
+          column: columns.length,
+        },
+      }
+
+      // Export file
+      const buffer = await workbook.xlsx.writeBuffer()
+      const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+      const filename = `${form.slug || form.title || "form"}-responses.xlsx`
+
+      saveAs(blob, filename)
+    } catch (error) {
+      console.error("Failed to export:", error)
+      alert("Failed to export to Excel. Please ensure exceljs and file-saver are installed.")
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -242,6 +357,10 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
           <h1 className="text-2xl font-bold text-foreground">{form.title} Responses</h1>
           <p className="text-muted-foreground mt-1">{totalResponses} total submissions</p>
         </div>
+        <Button variant="outline" onClick={handleExport} className="gap-2">
+          <Download className="h-4 w-4" />
+          Export to Excel
+        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -292,6 +411,27 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
                     <Bar dataKey="count" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+            )}
+
+            {entry.type === "rating" && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <span>Average: {entry.average !== null ? entry.average.toFixed(2) : "-"}</span>
+                  <span>Min: {entry.min !== null ? entry.min : "-"}</span>
+                  <span>Max: {entry.max !== null ? entry.max : "-"}</span>
+                  <span>Total: {(entry.counts || []).reduce((sum, item) => sum + item.count, 0)}</span>
+                </div>
+                <div className="h-[280px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={entry.counts} margin={{ left: 8, right: 8 }}>
+                      <XAxis dataKey="value" tick={{ fontSize: 12 }} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#0ea5e9" radius={[6, 6, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             )}
 

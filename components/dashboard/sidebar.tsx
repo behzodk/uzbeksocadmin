@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight } from "lucide-react"
+import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/dashboard/events", label: "Events", icon: Calendar },
   { href: "/dashboard/news", label: "News", icon: Mail },
   { href: "/dashboard/forms", label: "Forms", icon: FileText },
+  { href: "/dashboard/admins", label: "Admins", icon: Shield },
 ]
 
 export function Sidebar() {
