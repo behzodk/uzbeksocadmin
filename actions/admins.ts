@@ -9,9 +9,24 @@ export interface Admin {
     email: string
     roles: {
         super_admin: boolean
-        form_access: boolean
-        news_access: boolean
-        events_access: boolean
+        forms: {
+            read: boolean
+            create: boolean
+            update: boolean
+            delete: boolean
+        }
+        news: {
+            read: boolean
+            create: boolean
+            update: boolean
+            delete: boolean
+        }
+        events: {
+            read: boolean
+            create: boolean
+            update: boolean
+            delete: boolean
+        }
     }
     created_at: string
 }

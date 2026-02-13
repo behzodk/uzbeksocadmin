@@ -10,6 +10,7 @@ import { Plus, Pencil, Trash2, Mail, Send, ExternalLink } from "lucide-react"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { StatsCard } from "@/components/dashboard/stats-card"
+import { useRoles } from "@/components/dashboard/role-provider"
 
 interface NewsClientProps {
   initialNews: News[]
@@ -20,6 +21,7 @@ export function NewsClient({ initialNews }: NewsClientProps) {
   const [deletingNews, setDeletingNews] = useState<News | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { roles } = useRoles()
 
   const sentNews = news.filter((n) => n.status === "published").length
   const draftNews = news.filter((n) => n.status === "draft").length
@@ -112,26 +114,30 @@ export function NewsClient({ initialNews }: NewsClientProps) {
               <ExternalLink className="h-4 w-4" />
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation()
-              handleEdit(news)
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => {
-              e.stopPropagation()
-              setDeletingNews(news)
-            }}
-          >
-            <Trash2 className="h-4 w-4 text-destructive" />
-          </Button>
+          {(roles.super_admin || roles.news?.update) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleEdit(news)
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
+          {(roles.super_admin || roles.news?.delete) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                setDeletingNews(news)
+              }}
+            >
+              <Trash2 className="h-4 w-4 text-destructive" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -144,10 +150,12 @@ export function NewsClient({ initialNews }: NewsClientProps) {
           <h1 className="text-2xl font-bold text-foreground">News Management</h1>
           <p className="text-muted-foreground mt-1">Create, schedule, and track your news</p>
         </div>
-        <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
-          Create News
-        </Button>
+        {(roles.super_admin || roles.news?.create) && (
+          <Button onClick={handleCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create News
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">

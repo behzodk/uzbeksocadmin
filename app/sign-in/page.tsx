@@ -37,10 +37,12 @@ function SignInContent() {
 
     const redirect = searchParams.get("redirect")
     const supabase = getSupabaseBrowserClient()
+    const redirectUrl = `${window.location.origin}/auth/callback`
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback${redirect ? `?redirect=${encodeURIComponent(redirect)}` : ""}`,
+        redirectTo: redirectUrl,
         queryParams: {
           prompt: "select_account",
         },
@@ -53,13 +55,32 @@ function SignInContent() {
     }
   }
 
+  // Handle error messages from redirect
+  useEffect(() => {
+    const error = searchParams.get("error")
+    const reason = searchParams.get("reason")
+
+    if (error) {
+      setErrorMessage(error)
+    } else if (reason === "unauthorized") {
+      setErrorMessage("You are not authorized to access this application.")
+    } else if (reason === "no_email") {
+      setErrorMessage("Could not retrieve email address from your account.")
+    }
+  }, [searchParams])
+
   return (
     <>
       <Button className="w-full" size="lg" onClick={handleGoogleSignIn} disabled={loading}>
         Continue with Google
         <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
-      {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+      {errorMessage ? (
+        <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+          <p className="font-medium">Access Denied</p>
+          <p>{errorMessage}</p>
+        </div>
+      ) : null}
     </>
   )
 }

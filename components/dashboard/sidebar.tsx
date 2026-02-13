@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useRoles } from "@/components/dashboard/role-provider"
 
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -18,6 +19,26 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
+
+  // Use cached roles from LocalStorage/Context
+  const { roles } = useRoles()
+
+  // Filter nav items based on roles
+  const filteredNavItems = navItems.filter((item) => {
+    // Overview is always visible
+    if (item.href === "/dashboard") return true
+
+    // Super admin sees everything
+    if (roles.super_admin) return true
+
+    // Check specific permissions (safely handle undefined if roles not yet loaded)
+    if (item.href === "/dashboard/events") return roles.events?.read
+    if (item.href === "/dashboard/news") return roles.news?.read
+    if (item.href === "/dashboard/forms") return roles.forms?.read
+    if (item.href === "/dashboard/admins") return false // Only super_admin sees admin tab
+
+    return false
+  })
 
   return (
     <aside
@@ -34,7 +55,7 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 p-2 space-y-1">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const isActive = pathname === item.href
           return (
             <Link

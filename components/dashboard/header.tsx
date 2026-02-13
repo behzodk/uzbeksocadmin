@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Search } from "lucide-react"
+import { Bell, Search, RefreshCw } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -19,6 +19,7 @@ import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 export function Header() {
   const router = useRouter()
   const [signingOut, setSigningOut] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const [displayName, setDisplayName] = useState("Admin")
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
@@ -53,6 +54,15 @@ export function Header() {
     router.replace("/sign-in")
   }
 
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    router.refresh()
+    // Small delay to show smooth animation
+    setTimeout(() => {
+      setRefreshing(false)
+    }, 1000)
+  }
+
   return (
     <header className="h-16 border-b border-border bg-card px-6 flex items-center justify-between sticky top-0 z-10">
       <div className="flex items-center gap-4 flex-1 max-w-md">
@@ -63,9 +73,8 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-destructive rounded-full" />
+        <Button variant="ghost" size="icon" onClick={handleRefresh} title="Refresh Access">
+          <RefreshCw className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
         </Button>
 
         <DropdownMenu>

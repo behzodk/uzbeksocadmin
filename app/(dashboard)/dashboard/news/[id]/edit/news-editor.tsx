@@ -14,6 +14,7 @@ import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { ArrowLeft, Save, Eye, Edit3, Globe, Mail, Calendar, Users, Send, Loader2 } from "lucide-react"
+import { useRoles } from "@/components/dashboard/role-provider"
 
 interface NewsEditorProps {
   news: News | null
@@ -21,8 +22,28 @@ interface NewsEditorProps {
 
 export function NewsEditor({ news }: NewsEditorProps) {
   const router = useRouter()
+  const { roles, loading } = useRoles()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("edit")
+
+  // Determine if user has permission
+  // If news is null, we are creating -> check news.create
+  // If news is not null, we are updating -> check news.update
+  const canSave = news
+    ? (roles.super_admin || roles.news?.update)
+    : (roles.super_admin || roles.news?.create)
+
+  // Redirect if critical permission missing (after loading)
+  useEffect(() => {
+    if (!loading) {
+      if (news && !roles.super_admin && !roles.news?.update && !roles.news?.read) {
+        router.push("/dashboard/news?error=unauthorized")
+      }
+      if (!news && !roles.super_admin && !roles.news?.create) {
+        router.push("/dashboard/news?error=unauthorized")
+      }
+    }
+  }, [loading, roles, news, router])
 
   const [formData, setFormData] = useState({
     subject: news?.subject || "",
@@ -119,7 +140,7 @@ export function NewsEditor({ news }: NewsEditorProps) {
               </SelectContent>
             </Select>
 
-            <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
+            <Button onClick={handleSubmit} disabled={isLoading || !canSave} className="gap-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {news ? "Update" : "Create"}
             </Button>
