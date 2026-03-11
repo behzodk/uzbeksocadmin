@@ -8,7 +8,11 @@ interface PageProps {
 
 async function getForm(id: string) {
   const supabase = await getSupabaseServerClient()
-  const { data, error } = await supabase.from("forms").select("id, title, schema").eq("id", id).single()
+  const { data, error } = await supabase
+    .from("forms")
+    .select("id, slug, title, is_active, max_response, schema, event_id, created_at")
+    .eq("id", id)
+    .single()
 
   if (error) {
     return null

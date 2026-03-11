@@ -7,6 +7,7 @@ export async function middleware(request: NextRequest) {
 
   if (
     pathname === "/" ||
+    pathname.startsWith("/forms/") ||
     pathname.startsWith("/privacy-policy") ||
     pathname.startsWith("/terms-of-service") ||
     pathname.startsWith("/sign-in") ||

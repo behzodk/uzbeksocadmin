@@ -87,7 +87,7 @@ export default async function DashboardPage() {
                   .map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-center justify-between py-2 border-b border-border last:border-0"
+                      className="flex flex-col gap-3 border-b border-border py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div>
                         <p className="font-medium text-sm">{event.title}</p>
@@ -99,7 +99,9 @@ export default async function DashboardPage() {
                           })}
                         </p>
                       </div>
-                      <StatusBadge status={event.status} variant={getStatusVariant(event.status)} />
+                      <div className="sm:self-auto">
+                        <StatusBadge status={event.status} variant={getStatusVariant(event.status)} />
+                      </div>
                     </div>
                   ))
               )}

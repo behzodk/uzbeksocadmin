@@ -346,7 +346,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Link href="/dashboard/forms">
             <Button variant="ghost" className="mb-3 -ml-2 gap-2">
@@ -357,7 +357,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
           <h1 className="text-2xl font-bold text-foreground">{form.title} Responses</h1>
           <p className="text-muted-foreground mt-1">{totalResponses} total submissions</p>
         </div>
-        <Button variant="outline" onClick={handleExport} className="gap-2">
+        <Button variant="outline" size="sm" onClick={handleExport} className="shrink-0 gap-2">
           <Download className="h-4 w-4" />
           Export to Excel
         </Button>

@@ -60,6 +60,7 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
       ...field,
       id: field.id || createFieldId(),
       required: Boolean(field.required),
+      is_secure: Boolean(field.is_secure),
       order: typeof field.order === "number" ? field.order : undefined,
       conditional:
         conditional && conditional.field_key && conditional.option
@@ -83,6 +84,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     title: form?.title || "",
     slug: form?.slug || "",
     is_active: form?.is_active ?? true,
+    max_response: form?.max_response === null || form?.max_response === undefined ? "" : String(form.max_response),
     event_id: form?.event_id || "",
   })
 
@@ -131,6 +133,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         title: formMeta.title,
         slug: formMeta.slug,
         is_active: formMeta.is_active,
+        max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
         event_id: formMeta.event_id || null,
       },
       fields: fields.map((field, index) => ({
@@ -139,6 +142,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         label: field.label,
         key: field.key,
         required: field.required,
+        is_secure: field.is_secure || false,
         options: field.options || [],
         is_ranked: field.is_ranked || false,
         order: index + 1,
@@ -155,7 +159,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         is_student_email: field.is_student_email || false,
       })),
     })
-  }, [fields, formMeta.event_id, formMeta.is_active, formMeta.slug, formMeta.title])
+  }, [fields, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title])
 
   useEffect(() => {
     if (!initialSnapshotRef.current) {
@@ -230,6 +234,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         label: "",
         key: "",
         required: false,
+        is_secure: false,
         is_ranked: false,
         min_count: null,
         max_count: 255,
@@ -267,6 +272,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         label: "",
         key: "",
         required: false,
+        is_secure: false,
         is_ranked: false,
         min_count: null,
         max_count: 255,
@@ -293,6 +299,12 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   const validateFields = () => {
     if (!formMeta.title.trim()) return "Form title is required."
     if (!formMeta.slug.trim()) return "Slug is required."
+    if (formMeta.max_response !== "") {
+      const maxResponse = Number(formMeta.max_response)
+      if (!Number.isInteger(maxResponse) || maxResponse < 0) {
+        return "Max responses must be a whole number greater than or equal to 0."
+      }
+    }
     if (fields.length === 0) return "Add at least one field to the form."
 
     const keys = new Set<string>()
@@ -378,6 +390,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         ...field,
         key: field.key.trim(),
         label: field.label.trim(),
+        is_secure: Boolean(field.is_secure),
         options,
         is_ranked: field.type === "multi_select" ? Boolean(field.is_ranked) : undefined,
         order: index + 1,
@@ -405,6 +418,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       title: formMeta.title.trim(),
       slug: formMeta.slug.trim(),
       is_active: formMeta.is_active,
+      max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
       event_id: formMeta.event_id || null,
       schema: { fields: cleanedFields } satisfies FormSchema,
     }
@@ -451,9 +465,9 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={handleExit}>
+        <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+            <Button variant="ghost" size="icon-sm" onClick={handleExit}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -464,28 +478,28 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="edit" className="gap-2">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="edit" className="gap-1.5 px-3 text-xs sm:text-sm">
                   <Edit3 className="h-4 w-4" />
                   Edit
                 </TabsTrigger>
-                <TabsTrigger value="preview" className="gap-2">
+                <TabsTrigger value="preview" className="gap-1.5 px-3 text-xs sm:text-sm">
                   <Eye className="h-4 w-4" />
                   Preview
                 </TabsTrigger>
               </TabsList>
             </Tabs>
 
-            <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+            <Button onClick={handleSave} disabled={isSaving} size="sm" className="gap-2">
               {isSaving ? "Saving..." : form ? "Update" : "Create"}
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl p-6">
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
         {activeTab === "edit" ? (
           <div className="space-y-6">
             {error && (
@@ -521,7 +535,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2">
+                <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="form-event">Linked Event (optional)</Label>
                     <Select
@@ -546,6 +560,20 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                         })}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="form-max-response">Max Responses (optional)</Label>
+                    <Input
+                      id="form-max-response"
+                      type="number"
+                      min="0"
+                      step="1"
+                      inputMode="numeric"
+                      value={formMeta.max_response}
+                      onChange={(e) => setFormMeta((prev) => ({ ...prev, max_response: e.target.value }))}
+                      placeholder="Unlimited"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave blank to allow unlimited submissions.</p>
                   </div>
                   <div className="flex items-center justify-between rounded-lg border p-3">
                     <div>
@@ -690,7 +718,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div className="flex items-center justify-between rounded-lg border p-3 md:col-span-2">
+                              <div className="flex items-center justify-between rounded-lg border p-3">
                                 <div>
                                   <Label className="text-sm font-medium">Required</Label>
                                   <p className="text-xs text-muted-foreground">Field must be completed</p>
@@ -698,6 +726,16 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                 <Switch
                                   checked={field.required}
                                   onCheckedChange={(checked) => handleUpdateField(index, { required: checked })}
+                                />
+                              </div>
+                              <div className="flex items-center justify-between rounded-lg border p-3">
+                                <div>
+                                  <Label className="text-sm font-medium">Secure Field</Label>
+                                  <p className="text-xs text-muted-foreground">Hide this field on the public results page</p>
+                                </div>
+                                <Switch
+                                  checked={Boolean(field.is_secure)}
+                                  onCheckedChange={(checked) => handleUpdateField(index, { is_secure: checked })}
                                 />
                               </div>
                             </div>

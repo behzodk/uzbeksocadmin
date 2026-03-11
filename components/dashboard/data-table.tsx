@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, ChevronLeft, ChevronRight } from "lucide-react"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 
 interface Column<T> {
   key: keyof T | string
@@ -43,11 +44,19 @@ export function DataTable<T extends { id: string }>({
   const totalPages = Math.ceil(filteredData.length / perPage)
   const startIndex = (currentPage - 1) * perPage
   const paginatedData = filteredData.slice(startIndex, startIndex + perPage)
+  const rangeStart = filteredData.length === 0 ? 0 : startIndex + 1
+  const rangeEnd = Math.min(startIndex + perPage, filteredData.length)
+  const primaryColumn = columns[0]
+  const actionColumn = columns.find((column) => String(column.key) === "actions")
+  const detailColumns = columns.filter((column) => column !== primaryColumn && column !== actionColumn)
+
+  const getColumnValue = (item: T, column: Column<T>) =>
+    column.render ? column.render(item) : String(item[column.key as keyof T] ?? "")
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative min-w-[16rem] flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={searchPlaceholder}
@@ -66,7 +75,7 @@ export function DataTable<T extends { id: string }>({
             setCurrentPage(1)
           }}
         >
-          <SelectTrigger className="w-32">
+          <SelectTrigger size="sm" className="w-32 shrink-0">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -78,7 +87,7 @@ export function DataTable<T extends { id: string }>({
         </Select>
       </div>
 
-      <div className="border border-border rounded-lg overflow-hidden">
+      <div className="hidden overflow-hidden rounded-lg border border-border xl:block">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
@@ -92,7 +101,7 @@ export function DataTable<T extends { id: string }>({
           <TableBody>
             {paginatedData.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={columns.length} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={columns.length} className="py-8 text-center text-muted-foreground">
                   No results found
                 </TableCell>
               </TableRow>
@@ -104,9 +113,7 @@ export function DataTable<T extends { id: string }>({
                   className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
                 >
                   {columns.map((column) => (
-                    <TableCell key={`${item.id}-${String(column.key)}`}>
-                      {column.render ? column.render(item) : String(item[column.key as keyof T] ?? "")}
-                    </TableCell>
+                    <TableCell key={`${item.id}-${String(column.key)}`}>{getColumnValue(item, column)}</TableCell>
                   ))}
                 </TableRow>
               ))
@@ -115,10 +122,67 @@ export function DataTable<T extends { id: string }>({
         </Table>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="space-y-3 xl:hidden">
+        {paginatedData.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+            No results found
+          </div>
+        ) : (
+          paginatedData.map((item) => (
+            <div
+              key={item.id}
+              onClick={() => onRowClick?.(item)}
+              onKeyDown={(event) => {
+                if (!onRowClick) return
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault()
+                  onRowClick(item)
+                }
+              }}
+              className={cn(
+                "rounded-xl border border-border bg-card p-4 shadow-xs",
+                onRowClick && "cursor-pointer transition-colors active:bg-muted/40",
+              )}
+              role={onRowClick ? "button" : undefined}
+              tabIndex={onRowClick ? 0 : undefined}
+            >
+              <div className="flex items-start gap-3">
+                <div className="min-w-0 flex-1">
+                  {primaryColumn && (
+                    <div className="min-w-0 text-foreground [&_*]:max-w-full [&_*]:break-words [&_*]:whitespace-normal [&>div]:space-y-1 [&>div>p:first-child]:text-base [&>div>p:first-child]:font-semibold [&>p:first-child]:text-base [&>p:first-child]:font-semibold">
+                      {getColumnValue(item, primaryColumn)}
+                    </div>
+                  )}
+                </div>
+                {actionColumn && (
+                  <div className="shrink-0 rounded-lg bg-muted/45 p-1">
+                    {getColumnValue(item, actionColumn)}
+                  </div>
+                )}
+              </div>
+
+              {detailColumns.length > 0 && (
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  {detailColumns.map((column) => (
+                    <div key={`${item.id}-${String(column.key)}`} className="rounded-lg bg-muted/45 px-3 py-2.5">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        {column.header}
+                      </p>
+                      <div className="mt-1.5 text-sm font-medium text-foreground [&_*]:max-w-full [&_*]:break-words [&_*]:whitespace-normal">
+                        {getColumnValue(item, column)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">
-          Showing {startIndex + 1} to {Math.min(startIndex + perPage, filteredData.length)} of {filteredData.length}{" "}
-          results
+          Showing {rangeStart} to {rangeEnd} of {filteredData.length} results
         </p>
         <div className="flex items-center gap-2">
           <Button

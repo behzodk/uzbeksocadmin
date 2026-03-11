@@ -135,9 +135,9 @@ export function EventEditor({ event }: EventEditorProps) {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/dashboard/events")}>
+        <div className="flex flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+            <Button variant="ghost" size="icon-sm" onClick={() => router.push("/dashboard/events")}>
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
@@ -148,14 +148,14 @@ export function EventEditor({ event }: EventEditorProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList>
-                <TabsTrigger value="edit" className="gap-2">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="edit" className="gap-1.5 px-3 text-xs sm:text-sm">
                   <Edit3 className="h-4 w-4" />
                   Edit
                 </TabsTrigger>
-                <TabsTrigger value="preview" className="gap-2">
+                <TabsTrigger value="preview" className="gap-1.5 px-3 text-xs sm:text-sm">
                   <Eye className="h-4 w-4" />
                   Preview
                 </TabsTrigger>
@@ -170,7 +170,7 @@ export function EventEditor({ event }: EventEditorProps) {
                 setFormData((prev) => ({ ...prev, status, visibility }))
               }}
             >
-              <SelectTrigger className="w-32">
+              <SelectTrigger size="sm" className="w-[7.5rem]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -180,7 +180,7 @@ export function EventEditor({ event }: EventEditorProps) {
               </SelectContent>
             </Select>
 
-            <Button onClick={handleSubmit} disabled={isLoading} className="gap-2">
+            <Button onClick={handleSubmit} disabled={isLoading} size="sm" className="gap-2">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {event ? "Update" : "Create"}
             </Button>
@@ -189,7 +189,7 @@ export function EventEditor({ event }: EventEditorProps) {
       </div>
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="mx-auto max-w-7xl p-4 sm:p-6">
         {activeTab === "edit" ? (
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Main Content */}

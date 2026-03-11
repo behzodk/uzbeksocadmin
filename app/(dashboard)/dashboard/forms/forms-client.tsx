@@ -9,7 +9,7 @@ import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { FileText, Plus, Trash2, Pencil, Inbox } from "lucide-react"
+import { FileText, Plus, Trash2, Pencil, Inbox, ExternalLink } from "lucide-react"
 
 interface FormsClientProps {
   initialForms: Form[]
@@ -55,7 +55,7 @@ export function FormsClient({ initialForms }: FormsClientProps) {
       render: (form: Form) => (
         <div>
           <p className="font-medium">{form.title}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[250px]">/{form.slug}</p>
+          <p className="text-xs text-muted-foreground truncate max-w-[250px]">/forms/{form.slug}/results</p>
         </div>
       ),
     },
@@ -95,6 +95,17 @@ export function FormsClient({ initialForms }: FormsClientProps) {
             size="icon"
             onClick={(e) => {
               e.stopPropagation()
+              window.open(`/forms/${form.slug}/results`, "_blank")
+            }}
+            title="Open public results"
+          >
+            <ExternalLink className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation()
               router.push(`/dashboard/forms/${form.id}/responses`)
             }}
             title="View responses"
@@ -128,12 +139,12 @@ export function FormsClient({ initialForms }: FormsClientProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Forms Management</h1>
           <p className="text-muted-foreground mt-1">Create and manage registration forms</p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} size="sm" className="shrink-0">
           <Plus className="h-4 w-4 mr-2" />
           Create a Form
         </Button>

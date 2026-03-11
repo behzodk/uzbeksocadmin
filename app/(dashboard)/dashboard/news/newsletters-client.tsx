@@ -139,12 +139,12 @@ export function NewslettersClient({ initialNewsletters }: NewslettersClientProps
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Newsletter Management</h1>
           <p className="text-muted-foreground mt-1">Create, schedule, and track your newsletters</p>
         </div>
-        <Button onClick={handleCreate}>
+        <Button onClick={handleCreate} size="sm" className="shrink-0">
           <Plus className="h-4 w-4 mr-2" />
           Create Newsletter
         </Button>

@@ -212,12 +212,12 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">Admins Management</h1>
                     <p className="text-muted-foreground mt-1">Manage admin access and permissions</p>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={() => setIsDialogOpen(true)} size="sm" className="shrink-0">
                     <Plus className="h-4 w-4 mr-2" />
                     Add Admin
                 </Button>

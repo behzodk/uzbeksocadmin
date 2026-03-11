@@ -58,6 +58,21 @@ export interface News {
   updated_at: string
 }
 
+export interface Newsletter {
+  id: string
+  subject: string
+  content: string
+  slug: string | null
+  content_html: string | null
+  status: "draft" | "scheduled" | "sent"
+  scheduled_at: string | null
+  sent_at: string | null
+  recipient_count: number
+  open_rate: number | null
+  created_at: string
+  updated_at: string
+}
+
 export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean" | "rating"
 
 export interface FieldConditional {
@@ -71,6 +86,7 @@ export interface FormField {
   label: string
   key: string
   required: boolean
+  is_secure?: boolean
   options?: string[]
   is_ranked?: boolean
   order?: number
@@ -95,6 +111,7 @@ export interface Form {
   slug: string
   title: string
   is_active: boolean
+  max_response: number | null
   schema: FormSchema
   event_id: string | null
   created_at: string
