@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface PageProps {
-  params: Promise<{ slug: string }>
+  params: Promise<{ id: string }>
 }
 
 const longDate = new Intl.DateTimeFormat("en-US", {
@@ -70,12 +70,12 @@ const formatCellValue = (value: unknown, field: FormField) => {
   return serialized
 }
 
-async function getPublicFormResults(slug: string) {
+async function getPublicFormResults(id: string) {
   const supabase = getSupabaseAdminClient()
   const { data: form, error: formError } = await supabase
     .from("forms")
     .select("id, slug, title, is_active, max_response, schema, event_id, created_at")
-    .eq("slug", slug)
+    .eq("id", id)
     .eq("is_active", true)
     .single()
 
@@ -101,8 +101,8 @@ async function getPublicFormResults(slug: string) {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const { slug } = await params
-  const data = await getPublicFormResults(slug)
+  const { id } = await params
+  const data = await getPublicFormResults(id)
 
   if (!data) {
     return {
@@ -144,8 +144,8 @@ function ResultBar({
 }
 
 export default async function PublicFormResultsPage({ params }: PageProps) {
-  const { slug } = await params
-  const data = await getPublicFormResults(slug)
+  const { id } = await params
+  const data = await getPublicFormResults(id)
 
   if (!data) {
     notFound()
@@ -219,9 +219,9 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
                 <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <FileText className="h-4 w-4" />
-                    <span className="text-sm">Form Slug</span>
+                    <span className="text-sm">Form ID</span>
                   </div>
-                  <p className="mt-3 text-lg font-semibold text-foreground">{form.slug}</p>
+                  <p className="mt-3 text-lg font-semibold text-foreground break-all">{form.id}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
                   <div className="flex items-center gap-2 text-muted-foreground">

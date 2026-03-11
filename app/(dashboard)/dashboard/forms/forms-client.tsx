@@ -55,7 +55,7 @@ export function FormsClient({ initialForms }: FormsClientProps) {
       render: (form: Form) => (
         <div>
           <p className="font-medium">{form.title}</p>
-          <p className="text-xs text-muted-foreground truncate max-w-[250px]">/forms/{form.slug}/results</p>
+          <p className="text-xs text-muted-foreground truncate max-w-[250px]">/forms/{form.id}/results</p>
         </div>
       ),
     },
@@ -95,7 +95,7 @@ export function FormsClient({ initialForms }: FormsClientProps) {
             size="icon"
             onClick={(e) => {
               e.stopPropagation()
-              window.open(`/forms/${form.slug}/results`, "_blank")
+              window.open(`/forms/${form.id}/results`, "_blank")
             }}
             title="Open public results"
           >
