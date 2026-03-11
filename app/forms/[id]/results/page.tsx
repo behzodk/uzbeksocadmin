@@ -224,10 +224,6 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
                   <p className="mt-3 text-lg font-semibold text-foreground">{shortDate.format(new Date(form.created_at))}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-sm">Form ID</span>
-                  </div>
                   <p className="mt-3 text-lg font-semibold text-foreground break-all">{form.id}</p>
                 </div>
                 <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
