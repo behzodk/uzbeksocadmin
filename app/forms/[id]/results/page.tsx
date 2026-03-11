@@ -204,62 +204,6 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
           </div>
         </section>
 
-        <section className="mt-8 grid gap-6 xl:grid-cols-3">
-          <Card className="bg-card xl:col-span-2">
-            <CardHeader>
-              <CardTitle>Submission Timeline</CardTitle>
-              <CardDescription>
-                {results.latestResponse
-                  ? `Most recent response on ${longDate.format(new Date(results.latestResponse))}.`
-                  : "No responses have been submitted yet."}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <CalendarDays className="h-4 w-4" />
-                    <span className="text-sm">Created</span>
-                  </div>
-                  <p className="mt-3 text-lg font-semibold text-foreground">{shortDate.format(new Date(form.created_at))}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
-                  <p className="mt-3 text-lg font-semibold text-foreground break-all">{form.id}</p>
-                </div>
-                <div className="rounded-xl border border-border/60 bg-muted/25 p-4">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="text-sm">Active Statuses</span>
-                  </div>
-                  <p className="mt-3 text-lg font-semibold text-foreground">{results.statusCounts.length || 1}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card">
-            <CardHeader>
-              <CardTitle>Status Breakdown</CardTitle>
-              <CardDescription>Distribution of submission states recorded for this form.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {results.statusCounts.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No submission status data yet.</p>
-              ) : (
-                results.statusCounts.map((status) => (
-                  <ResultBar
-                    key={status.label}
-                    label={status.label}
-                    count={status.count}
-                    percentage={status.percentage}
-                    tone="bg-slate-900"
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </section>
-
         <section className="mt-10 space-y-4">
           <div className="max-w-3xl">
             <h2 className="text-2xl font-semibold text-foreground">Submission Records</h2>
