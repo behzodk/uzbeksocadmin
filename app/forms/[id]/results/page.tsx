@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation"
-import { BarChart3, CalendarDays, FileText, Table2 } from "lucide-react"
+import { BarChart3, CalendarDays, Download, FileText, Table2 } from "lucide-react"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { buildPublicFormResults, type FormResponseRecord } from "@/lib/form-results"
 import type { Form, FormField } from "@/lib/types"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -175,6 +176,12 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
                 <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
                   Aggregated public results for this form. Charts and summaries update as new responses come in.
                 </p>
+                <Button asChild variant="outline" size="sm" className="mt-2 gap-2">
+                  <a href={`/forms/${form.id}/results/export`}>
+                    <Download className="h-4 w-4" />
+                    Download Excel
+                  </a>
+                </Button>
               </div>
             </div>
 
