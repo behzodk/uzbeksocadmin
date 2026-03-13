@@ -6,6 +6,7 @@ import type { Form, FormField } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { PublicResultsTable, type PublicResultsField, type PublicResultsRow } from "./public-results-table"
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -77,7 +78,6 @@ async function getPublicFormResults(id: string) {
     .from("forms")
     .select("id, slug, title, is_active, max_response, schema, event_id, created_at")
     .eq("id", id)
-    .eq("is_active", true)
     .single()
 
   if (formError || !form) {
@@ -154,6 +154,21 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
 
   const { form, responses, results } = data
   const fields = getSortedFields(form)
+  const tableFields: PublicResultsField[] = fields.map((field) => ({
+    id: field.id,
+    key: field.key,
+    label: field.label,
+    isSecure: Boolean(field.is_secure),
+  }))
+  const tableRows: PublicResultsRow[] = responses.map((response) => ({
+    id: response.id,
+    submittedAt: response.created_at,
+    submittedLabel: dateTime.format(new Date(response.created_at)),
+    status: response.status,
+    values: Object.fromEntries(
+      fields.map((field) => [field.key, formatCellValue(response.answers?.[field.key], field)]),
+    ) as Record<string, string>,
+  }))
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_40%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(255,255,255,1)_100%)]">
@@ -232,66 +247,7 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
             </CardHeader>
 
             <CardContent className="p-0">
-              {responses.length === 0 ? (
-                <div className="px-6 py-12 text-center text-sm text-muted-foreground">No responses yet.</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-muted/35">
-                      <tr className="border-b border-border/70 align-top">
-                        <th className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          Submitted
-                        </th>
-                        <th className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                          Status
-                        </th>
-                        {fields.map((field) => (
-                          <th
-                            key={field.id}
-                            className="min-w-[180px] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-                          >
-                            <div className="space-y-1">
-                              <span>{field.label}</span>
-                              {field.is_secure && (
-                                <div className="text-[10px] font-medium normal-case tracking-normal text-muted-foreground/90">
-                                  Masked publicly
-                                </div>
-                              )}
-                            </div>
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {responses.map((response, index) => (
-                        <tr
-                          key={response.id}
-                          className={index % 2 === 0 ? "bg-background" : "bg-muted/10"}
-                        >
-                          <td className="whitespace-nowrap border-b border-border/60 px-4 py-4 align-top font-medium text-foreground">
-                            {dateTime.format(new Date(response.created_at))}
-                          </td>
-                          <td className="border-b border-border/60 px-4 py-4 align-top">
-                            <Badge variant="secondary" className="capitalize">
-                              {response.status}
-                            </Badge>
-                          </td>
-                          {fields.map((field) => (
-                            <td
-                              key={`${response.id}-${field.id}`}
-                              className="min-w-[180px] max-w-[320px] border-b border-border/60 px-4 py-4 align-top text-foreground"
-                            >
-                              <div className="whitespace-normal break-words leading-6">
-                                {formatCellValue(response.answers?.[field.key], field)}
-                              </div>
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <PublicResultsTable fields={tableFields} rows={tableRows} />
             </CardContent>
           </Card>
         </section>

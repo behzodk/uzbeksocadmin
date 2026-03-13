@@ -34,7 +34,6 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
     .from("forms")
     .select("id, slug, title, is_active, max_response, schema, event_id, created_at")
     .eq("id", id)
-    .eq("is_active", true)
     .single()
 
   if (formError || !form) {
