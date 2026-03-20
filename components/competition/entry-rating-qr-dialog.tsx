@@ -23,7 +23,7 @@ function slugifyFileName(value: string) {
 export function EntryRatingQrDialog({ entryName, ratingPublicId }: EntryRatingQrDialogProps) {
   const configuredBaseUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, "") || ""
   const [open, setOpen] = useState(false)
-  const [ratingUrl, setRatingUrl] = useState(configuredBaseUrl ? `${configuredBaseUrl}/competitions/rate/${ratingPublicId}` : "")
+  const [ratingUrl, setRatingUrl] = useState(configuredBaseUrl ? `https://uzbeksoc.co.uk/competitions/rate/${ratingPublicId}` : "")
   const [qrDataUrl, setQrDataUrl] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
