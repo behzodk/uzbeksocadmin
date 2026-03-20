@@ -6,7 +6,8 @@ create table public.admins (
     "super_admin": false,
     "form_access": false,
     "news_access": false,
-    "events_access": false
+    "events_access": false,
+    "competitions_access": false
   }'::jsonb,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

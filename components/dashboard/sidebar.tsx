@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield, Menu } from "lucide-react"
+import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield, Menu, Trophy } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRoles } from "@/components/dashboard/role-provider"
@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/s
 const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "Events", icon: Calendar },
+  { href: "/dashboard/competetion", label: "Competetion", icon: Trophy },
   { href: "/dashboard/news", label: "News", icon: Mail },
   { href: "/dashboard/forms", label: "Forms", icon: FileText },
   { href: "/dashboard/admins", label: "Admins", icon: Shield },
@@ -33,6 +34,7 @@ function SidebarNavContent({ collapsed = false, onNavigate, mobile = false }: Si
     if (roles.super_admin) return true
 
     if (item.href === "/dashboard/events") return roles.events?.read
+    if (item.href === "/dashboard/competetion") return roles.competitions?.read
     if (item.href === "/dashboard/news") return roles.news?.read
     if (item.href === "/dashboard/forms") return roles.forms?.read
     if (item.href === "/dashboard/admins") return false
@@ -51,7 +53,10 @@ function SidebarNavContent({ collapsed = false, onNavigate, mobile = false }: Si
 
       <nav className="flex-1 p-2 space-y-1">
         {filteredNavItems.map((item) => {
-          const isActive = pathname === item.href
+          const isActive =
+            item.href === "/dashboard"
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(`${item.href}/`)
           return (
             <Link
               key={item.href}

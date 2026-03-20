@@ -58,6 +58,86 @@ export interface News {
   updated_at: string
 }
 
+export interface Competition {
+  id: string
+  title: string
+  description: string | null
+  slug: string | null
+  content_html: string | null
+  location: string | null
+  start_date: string
+  end_date: string | null
+  registration_deadline: string | null
+  capacity: number | null
+  prize: string | null
+  featured_image: string | null
+  entry_label: string
+  rating_criteria: CompetitionRatingCriterion[] | null
+  leaderboard_settings: CompetitionLeaderboardSettings | null
+  voter_validation_settings: CompetitionVoterValidationSettings | null
+  status: "draft" | "published" | "cancelled" | "completed"
+  visibility: "public" | "private"
+  is_featured: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type CompetitionRatingScaleType = "numeric" | "stars"
+
+export interface CompetitionRatingCriterion {
+  id: string
+  label: string
+  description?: string | null
+  scale_type: CompetitionRatingScaleType
+  scale_min: number
+  scale_max: number
+  weight_percentage: number
+}
+
+export type CompetitionLeaderboardMethod = "average" | "behzod_formula"
+
+export interface CompetitionLeaderboardSettings {
+  result_max: number
+  scoring_method: CompetitionLeaderboardMethod
+  minimum_ratings_threshold: number
+}
+
+export type CompetitionRatingIdentityField = "guest_email"
+
+export interface CompetitionVoterValidationSettings {
+  rating_identity_field: CompetitionRatingIdentityField
+  eligibility_form_id: string | null
+  eligibility_form_field_key: string | null
+}
+
+export interface CompetitionEntry {
+  id: string
+  competition_id: string
+  competitor_name: string
+  competitor_email: string | null
+  competitor_phone: string | null
+  entry_name: string
+  entry_description: string | null
+  entry_image: string | null
+  rating_public_id: string
+  status: "pending" | "approved" | "rejected"
+  created_at: string
+  updated_at: string
+}
+
+export interface CompetitionEntryRating {
+  id: string
+  entry_id: string
+  competition_id: string
+  guest_name: string | null
+  guest_email: string | null
+  voter_identity?: string | null
+  scores: Record<string, number>
+  total_score: number | null
+  notes: string | null
+  created_at: string
+}
+
 export interface Newsletter {
   id: string
   subject: string

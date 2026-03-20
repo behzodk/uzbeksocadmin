@@ -29,6 +29,7 @@ export function StatusBadge({ status, variant = "default" }: StatusBadgeProps) {
 export function getStatusVariant(status: string): "default" | "success" | "warning" | "danger" | "info" {
   switch (status.toLowerCase()) {
     case "active":
+    case "approved":
     case "published":
     case "sent":
     case "completed":
@@ -39,6 +40,7 @@ export function getStatusVariant(status: string): "default" | "success" | "warni
       return "warning"
     case "inactive":
     case "cancelled":
+    case "rejected":
       return "danger"
     default:
       return "default"

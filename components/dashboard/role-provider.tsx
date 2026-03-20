@@ -1,20 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState } from "react"
-
-export interface AdminRoles {
-    super_admin: boolean
-    forms: { read: boolean; create: boolean; update: boolean; delete: boolean }
-    news: { read: boolean; create: boolean; update: boolean; delete: boolean }
-    events: { read: boolean; create: boolean; update: boolean; delete: boolean }
-}
-
-const DEFAULT_ROLES: AdminRoles = {
-    super_admin: false,
-    forms: { read: false, create: false, update: false, delete: false },
-    news: { read: false, create: false, update: false, delete: false },
-    events: { read: false, create: false, update: false, delete: false },
-}
+import { mergeAdminRoles, type AdminRoles } from "@/lib/admin-roles"
 
 interface RoleContextType {
     roles: AdminRoles
@@ -38,7 +25,7 @@ export function RoleProvider({
         try {
             const stored = localStorage.getItem("admin_roles")
             if (stored) {
-                setRoles(JSON.parse(stored))
+                setRoles(mergeAdminRoles(JSON.parse(stored)))
             }
         } catch (e) {
             console.error("Failed to load roles from storage", e)
@@ -51,9 +38,9 @@ export function RoleProvider({
     // We prioritize serverRoles once they are available/change
     useEffect(() => {
         if (serverRoles) {
-            setRoles(serverRoles)
+            setRoles(mergeAdminRoles(serverRoles))
             try {
-                localStorage.setItem("admin_roles", JSON.stringify(serverRoles))
+                localStorage.setItem("admin_roles", JSON.stringify(mergeAdminRoles(serverRoles)))
             } catch (e) {
                 console.error("Failed to save roles to storage", e)
             }

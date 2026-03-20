@@ -26,6 +26,12 @@ begin
       'create', coalesce((old_roles->>'events_access')::boolean, false),
       'update', coalesce((old_roles->>'events_access')::boolean, false),
       'delete', coalesce((old_roles->>'events_access')::boolean, false)
+    ),
+    'competitions', jsonb_build_object(
+      'read', coalesce((old_roles->>'competitions_access')::boolean, false),
+      'create', coalesce((old_roles->>'competitions_access')::boolean, false),
+      'update', coalesce((old_roles->>'competitions_access')::boolean, false),
+      'delete', coalesce((old_roles->>'competitions_access')::boolean, false)
     )
   );
 

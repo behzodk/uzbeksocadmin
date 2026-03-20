@@ -3,31 +3,12 @@
 import { revalidatePath } from "next/cache"
 import { getSupabaseServerClient } from "@/lib/supabase/server"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
+import type { AdminRoles } from "@/lib/admin-roles"
 
 export interface Admin {
     id: string
     email: string
-    roles: {
-        super_admin: boolean
-        forms: {
-            read: boolean
-            create: boolean
-            update: boolean
-            delete: boolean
-        }
-        news: {
-            read: boolean
-            create: boolean
-            update: boolean
-            delete: boolean
-        }
-        events: {
-            read: boolean
-            create: boolean
-            update: boolean
-            delete: boolean
-        }
-    }
+    roles: AdminRoles
     created_at: string
 }
 

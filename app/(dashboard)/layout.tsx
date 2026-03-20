@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/dashboard/sidebar"
 import { Header } from "@/components/dashboard/header"
 
 import { RoleProvider } from "@/components/dashboard/role-provider"
+import { mergeAdminRoles, type AdminRoles } from "@/lib/admin-roles"
 
 export default async function DashboardLayout({
   children,
@@ -18,12 +19,7 @@ export default async function DashboardLayout({
     redirect("/sign-in")
   }
 
-  let roles = data.user.app_metadata?.roles as {
-    super_admin: boolean
-    forms: { read: boolean; create: boolean; update: boolean; delete: boolean }
-    news: { read: boolean; create: boolean; update: boolean; delete: boolean }
-    events: { read: boolean; create: boolean; update: boolean; delete: boolean }
-  } | undefined
+  let roles = data.user.app_metadata?.roles as AdminRoles | undefined
 
   if (!roles) {
     const { data: adminUser } = await supabase
@@ -33,17 +29,11 @@ export default async function DashboardLayout({
       .single()
 
     if (adminUser) {
-      roles = adminUser.roles as typeof roles
+      roles = adminUser.roles as AdminRoles
     }
   }
 
-  // Default to empty roles if still not found
-  const finalRoles = roles || {
-    super_admin: false,
-    forms: { read: false, create: false, update: false, delete: false },
-    news: { read: false, create: false, update: false, delete: false },
-    events: { read: false, create: false, update: false, delete: false },
-  }
+  const finalRoles = mergeAdminRoles(roles)
 
   return (
     <RoleProvider serverRoles={finalRoles}>

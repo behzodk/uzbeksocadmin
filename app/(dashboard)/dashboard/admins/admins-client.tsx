@@ -14,37 +14,23 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from "@/components/ui/dialog"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
 import { createAdmin, updateAdmin, deleteAdmin, type Admin } from "@/actions/admins"
-import { Plus, Pencil, Trash2, FolderOpen, Folder, ChevronRight, ChevronDown, Check, FileText, CornerDownRight, ShieldCheck } from "lucide-react"
+import { Plus, Pencil, Trash2, FolderOpen, Folder, ChevronRight, FileText, CornerDownRight, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+    ADMIN_RESOURCES,
+    createDefaultAdminRoles,
+    DEFAULT_PERMISSIONS,
+    mergeAdminRoles,
+    type AdminResource,
+} from "@/lib/admin-roles"
 
 interface AdminsClientProps {
     initialAdmins: Admin[]
 }
-
-const DEFAULT_PERMISSIONS = {
-    read: false,
-    create: false,
-    update: false,
-    delete: false,
-}
-
-const DEFAULT_ROLES = {
-    super_admin: false,
-    forms: { ...DEFAULT_PERMISSIONS },
-    news: { ...DEFAULT_PERMISSIONS },
-    events: { ...DEFAULT_PERMISSIONS },
-}
-
-const RESOURCES = [
-    { key: "forms", label: "Forms" },
-    { key: "news", label: "News" },
-    { key: "events", label: "Events" },
-] as const
 
 export function AdminsClient({ initialAdmins }: AdminsClientProps) {
     const router = useRouter()
@@ -55,11 +41,11 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
 
     // Form state
     const [email, setEmail] = useState("")
-    const [roles, setRoles] = useState<Admin["roles"]>(DEFAULT_ROLES)
+    const [roles, setRoles] = useState<Admin["roles"]>(createDefaultAdminRoles())
 
     const resetForm = () => {
         setEmail("")
-        setRoles(JSON.parse(JSON.stringify(DEFAULT_ROLES))) // Deep copy to avoid reference issues
+        setRoles(createDefaultAdminRoles())
         setEditingAdmin(null)
     }
 
@@ -71,19 +57,11 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
     const handleEditClick = (admin: Admin) => {
         setEditingAdmin(admin)
         setEmail(admin.email)
-        // Ensure defaults for missing keys if migration is partial
-        const mergedRoles = {
-            ...DEFAULT_ROLES,
-            ...admin.roles,
-            forms: { ...DEFAULT_ROLES.forms, ...admin.roles.forms },
-            news: { ...DEFAULT_ROLES.news, ...admin.roles.news },
-            events: { ...DEFAULT_ROLES.events, ...admin.roles.events },
-        }
-        setRoles(mergedRoles)
+        setRoles(mergeAdminRoles(admin.roles))
         setIsDialogOpen(true)
     }
 
-    const handlePermissionChange = (resource: "forms" | "news" | "events", action: keyof typeof DEFAULT_PERMISSIONS, checked: boolean) => {
+    const handlePermissionChange = (resource: AdminResource, action: keyof typeof DEFAULT_PERMISSIONS, checked: boolean) => {
         setRoles((prev) => {
             const newRoles = { ...prev }
             const resourceRoles = { ...newRoles[resource] }
@@ -163,12 +141,11 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
                     )
                 }
 
-                // Helper to check if any permission exists for a resource
-                const hasAccess = (resource: "forms" | "news" | "events") => {
+                const hasAccess = (resource: AdminResource) => {
                     return admin.roles[resource] && Object.values(admin.roles[resource]).some(Boolean)
                 }
 
-                const activeResources = RESOURCES.filter(r => hasAccess(r.key))
+                const activeResources = ADMIN_RESOURCES.filter(r => hasAccess(r.key))
 
                 if (activeResources.length === 0) {
                     return <span className="text-muted-foreground text-xs italic">No access</span>
@@ -266,7 +243,7 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
                                         <span className="text-sm font-semibold">Access Control List</span>
                                     </div>
                                     <div className="p-2 space-y-1">
-                                        {RESOURCES.map((resource) => (
+                                        {ADMIN_RESOURCES.map((resource) => (
                                             <Collapsible key={resource.key} defaultOpen className="group">
                                                 <CollapsibleTrigger className="flex items-center w-full p-2 rounded-md hover:bg-muted/50 text-left transition-colors [&[data-state=open]>svg:first-child]:rotate-90">
                                                     <ChevronRight className="h-4 w-4 text-muted-foreground mr-1 transition-transform" />
@@ -291,7 +268,7 @@ export function AdminsClient({ initialAdmins }: AdminsClientProps) {
                                                                     id={`${resource.key}-${action}`}
                                                                     checked={roles[resource.key]?.[action as keyof typeof DEFAULT_PERMISSIONS]}
                                                                     onCheckedChange={(checked) =>
-                                                                        handlePermissionChange(resource.key as any, action as any, !!checked)
+                                                                        handlePermissionChange(resource.key, action as keyof typeof DEFAULT_PERMISSIONS, !!checked)
                                                                     }
                                                                     disabled={roles.super_admin}
                                                                     className="h-4 w-4"
