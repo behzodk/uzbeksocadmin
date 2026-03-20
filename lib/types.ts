@@ -71,6 +71,7 @@ export interface Competition {
   capacity: number | null
   prize: string | null
   featured_image: string | null
+  featured_image_path?: string | null
   entry_label: string
   rating_criteria: CompetitionRatingCriterion[] | null
   leaderboard_settings: CompetitionLeaderboardSettings | null
@@ -119,6 +120,7 @@ export interface CompetitionEntry {
   entry_name: string
   entry_description: string | null
   entry_image: string | null
+  entry_image_path?: string | null
   rating_public_id: string
   status: "pending" | "approved" | "rejected"
   created_at: string

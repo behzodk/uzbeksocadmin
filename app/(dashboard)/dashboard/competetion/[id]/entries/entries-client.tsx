@@ -9,6 +9,7 @@ import {
   getMinimumRatingsRequiredForPlacement,
   normalizeLeaderboardSettings,
 } from "@/lib/competition-scoring"
+import { CompetitionImageUploadField } from "@/components/competition/competition-image-upload-field"
 import { EntryRatingQrDialog } from "@/components/competition/entry-rating-qr-dialog"
 import { useRoles } from "@/components/dashboard/role-provider"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -45,6 +46,7 @@ function createEmptyEntryForm() {
     entry_name: "",
     entry_description: "",
     entry_image: "",
+    entry_image_path: "",
     status: "pending" as CompetitionEntry["status"],
   }
 }
@@ -121,6 +123,7 @@ export function CompetitionEntriesClient({
       entry_name: entry.entry_name,
       entry_description: entry.entry_description || "",
       entry_image: entry.entry_image || "",
+      entry_image_path: entry.entry_image_path || "",
       status: entry.status,
     })
     setIsDialogOpen(true)
@@ -139,6 +142,7 @@ export function CompetitionEntriesClient({
       entry_name: formData.entry_name,
       entry_description: formData.entry_description || null,
       entry_image: formData.entry_image || null,
+      entry_image_path: formData.entry_image_path || null,
       status: formData.status,
     }
 
@@ -386,15 +390,28 @@ export function CompetitionEntriesClient({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="entry_image">Image URL</Label>
-              <Input
-                id="entry_image"
-                value={formData.entry_image}
-                onChange={(event) => setFormData((prev) => ({ ...prev, entry_image: event.target.value }))}
-                placeholder="https://example.com/dish.jpg"
-              />
-            </div>
+            <CompetitionImageUploadField
+              id="entry_image"
+              label={`${entryLabel} Image`}
+              imageUrl={formData.entry_image}
+              storagePath={formData.entry_image_path}
+              folder="entries/admin"
+              hint="Upload an image from this device. The stored public URL will be saved to the entry."
+              onChange={({ imageUrl, storagePath }) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  entry_image: imageUrl,
+                  entry_image_path: storagePath,
+                }))
+              }
+              onClear={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  entry_image: "",
+                  entry_image_path: "",
+                }))
+              }
+            />
 
             <div className="space-y-2">
               <Label htmlFor="entry_description">Description</Label>

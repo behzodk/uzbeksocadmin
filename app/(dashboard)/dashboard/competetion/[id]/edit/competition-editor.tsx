@@ -11,6 +11,7 @@ import {
   rebalanceCriterionWeights,
 } from "@/lib/competition-scoring"
 import { normalizeCompetitionVoterValidationSettings } from "@/lib/competition-voter-validation"
+import { CompetitionImageUploadField } from "@/components/competition/competition-image-upload-field"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -107,6 +108,7 @@ export function CompetitionEditor({ competition, forms }: CompetitionEditorProps
     capacity: competition?.capacity?.toString() || "",
     prize: competition?.prize || "",
     featured_image: competition?.featured_image || "",
+    featured_image_path: competition?.featured_image_path || "",
     entry_label: competition?.entry_label || "Entry",
     rating_criteria: normalizeRatingCriteria(competition?.rating_criteria),
     leaderboard_settings: normalizeLeaderboardSettings(competition?.leaderboard_settings),
@@ -247,6 +249,7 @@ export function CompetitionEditor({ competition, forms }: CompetitionEditorProps
       capacity: formData.capacity ? Number.parseInt(formData.capacity, 10) : null,
       prize: formData.prize || null,
       featured_image: formData.featured_image || null,
+      featured_image_path: formData.featured_image_path || null,
       entry_label: formData.entry_label.trim() || "Entry",
       rating_criteria: normalizedCriteria,
       leaderboard_settings: {
@@ -412,15 +415,28 @@ export function CompetitionEditor({ competition, forms }: CompetitionEditorProps
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="featured_image">Featured Image URL</Label>
-                    <Input
-                      id="featured_image"
-                      value={formData.featured_image}
-                      onChange={(event) => setFormData((prev) => ({ ...prev, featured_image: event.target.value }))}
-                      placeholder="https://example.com/competition-cover.jpg"
-                    />
-                  </div>
+                  <CompetitionImageUploadField
+                    id="featured_image"
+                    label="Featured Image"
+                    imageUrl={formData.featured_image}
+                    storagePath={formData.featured_image_path}
+                    folder="competitions/featured"
+                    hint="Upload a local image from your device. The public URL will be stored automatically."
+                    onChange={({ imageUrl, storagePath }) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        featured_image: imageUrl,
+                        featured_image_path: storagePath,
+                      }))
+                    }
+                    onClear={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        featured_image: "",
+                        featured_image_path: "",
+                      }))
+                    }
+                  />
                 </CardContent>
               </Card>
 

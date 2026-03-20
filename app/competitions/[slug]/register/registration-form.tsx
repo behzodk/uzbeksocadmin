@@ -2,6 +2,7 @@
 
 import { type FormEvent, useMemo, useState } from "react"
 import type { Competition } from "@/lib/types"
+import { CompetitionImageUploadField } from "@/components/competition/competition-image-upload-field"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,11 +19,10 @@ export function CompetitionRegistrationForm({ competition }: CompetitionRegistra
   const [success, setSuccess] = useState<{ entryName: string; ratingId: string } | null>(null)
   const [formData, setFormData] = useState({
     competitor_name: "",
-    competitor_email: "",
-    competitor_phone: "",
     entry_name: "",
     entry_description: "",
     entry_image: "",
+    entry_image_path: "",
   })
 
   const registrationOpen = useMemo(() => {
@@ -40,11 +40,10 @@ export function CompetitionRegistrationForm({ competition }: CompetitionRegistra
       .insert({
         competition_id: competition.id,
         competitor_name: formData.competitor_name,
-        competitor_email: formData.competitor_email || null,
-        competitor_phone: formData.competitor_phone || null,
         entry_name: formData.entry_name,
         entry_description: formData.entry_description || null,
         entry_image: formData.entry_image || null,
+        entry_image_path: formData.entry_image_path || null,
         status: "pending",
       })
       .select("entry_name, rating_public_id")
@@ -54,11 +53,10 @@ export function CompetitionRegistrationForm({ competition }: CompetitionRegistra
       setSuccess({ entryName: data.entry_name, ratingId: data.rating_public_id })
       setFormData({
         competitor_name: "",
-        competitor_email: "",
-        competitor_phone: "",
         entry_name: "",
         entry_description: "",
         entry_image: "",
+        entry_image_path: "",
       })
     }
 
@@ -109,36 +107,28 @@ export function CompetitionRegistrationForm({ competition }: CompetitionRegistra
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="competitor_email">Email</Label>
-                <Input
-                  id="competitor_email"
-                  type="email"
-                  value={formData.competitor_email}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, competitor_email: event.target.value }))}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="competitor_phone">Phone</Label>
-                <Input
-                  id="competitor_phone"
-                  value={formData.competitor_phone}
-                  onChange={(event) => setFormData((prev) => ({ ...prev, competitor_phone: event.target.value }))}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="entry_image">Image URL</Label>
-              <Input
-                id="entry_image"
-                value={formData.entry_image}
-                onChange={(event) => setFormData((prev) => ({ ...prev, entry_image: event.target.value }))}
-                placeholder="https://example.com/your-entry.jpg"
-              />
-            </div>
+            <CompetitionImageUploadField
+              id="entry_image"
+              label={`${competition.entry_label} Image`}
+              imageUrl={formData.entry_image}
+              storagePath={formData.entry_image_path}
+              folder="entries/public"
+              hint="Upload a picture from your device. The stored public URL will be submitted with your entry."
+              onChange={({ imageUrl, storagePath }) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  entry_image: imageUrl,
+                  entry_image_path: storagePath,
+                }))
+              }
+              onClear={() =>
+                setFormData((prev) => ({
+                  ...prev,
+                  entry_image: "",
+                  entry_image_path: "",
+                }))
+              }
+            />
 
             <div className="space-y-2">
               <Label htmlFor="entry_description">Description</Label>
