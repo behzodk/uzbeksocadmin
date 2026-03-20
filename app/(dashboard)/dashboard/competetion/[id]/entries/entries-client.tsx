@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, ExternalLink, Pencil, Plus, Star, Trash2, Trophy, Users } from "lucide-react"
+import { ArrowLeft, ExternalLink, Eye, Pencil, Plus, Star, Trash2, Trophy, Users } from "lucide-react"
 
 interface CompetitionEntriesClientProps {
   competition: Competition
@@ -239,6 +239,17 @@ export function CompetitionEntriesClient({
       header: "Actions",
       render: (entry: CompetitionEntry) => (
         <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(event) => {
+              event.stopPropagation()
+              router.push(`/dashboard/competetion/${competition.id}/entries/${entry.id}/votes`)
+            }}
+            title="View individual votes"
+          >
+            <Eye className="h-4 w-4" />
+          </Button>
           {entry.status === "approved" && (
             <>
               <EntryRatingQrDialog entryName={entry.entry_name} ratingPublicId={entry.rating_public_id} />
@@ -340,7 +351,7 @@ export function CompetitionEntriesClient({
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{editingEntry ? `Edit ${entryLabel}` : `Add ${entryLabel}`}</DialogTitle>
             <DialogDescription>
