@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import type { FormFieldType } from "@/lib/types"
 import { Search, SlidersHorizontal, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,7 @@ export interface PublicResultsField {
   key: string
   label: string
   isSecure: boolean
+  type: FormFieldType
 }
 
 export interface PublicResultsRow {
@@ -30,6 +32,7 @@ interface PublicResultsTableProps {
 type SortOption = "newest" | "oldest" | "status_asc" | "status_desc"
 
 const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"]
+const isHttpUrl = (value: string) => value.startsWith("http://") || value.startsWith("https://")
 
 export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
   const [globalSearch, setGlobalSearch] = useState("")
@@ -345,7 +348,23 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
                     key={`${row.id}-${field.id}`}
                     className="min-w-[180px] max-w-[320px] border-b border-border/60 px-4 py-4 align-top text-foreground"
                   >
-                    <div className="whitespace-normal break-words leading-6">{row.values[field.key] || "—"}</div>
+                    {field.type === "image" && !field.isSecure && row.values[field.key] && isHttpUrl(row.values[field.key]) ? (
+                      <a
+                        href={row.values[field.key]}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block space-y-2 rounded-lg border border-border/70 p-2 hover:bg-muted/20"
+                      >
+                        <img
+                          src={row.values[field.key]}
+                          alt={`${field.label} submission`}
+                          className="h-24 w-full rounded-md object-cover"
+                        />
+                        <span className="block text-xs font-medium text-primary">Open image</span>
+                      </a>
+                    ) : (
+                      <div className="whitespace-normal break-words leading-6">{row.values[field.key] || "—"}</div>
+                    )}
                   </td>
                 ))}
               </tr>

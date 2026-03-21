@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { ContentPreview } from "@/components/editor/content-preview"
+import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import type { Form, FormField, FormSchema, FormFieldType } from "@/lib/types"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
@@ -33,6 +35,8 @@ const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: "multi_select", label: "Multi Select" },
   { value: "boolean", label: "Boolean" },
   { value: "rating", label: "Rating" },
+  { value: "image", label: "Image" },
+  { value: "content", label: "Text Block" },
 ]
 
 const createFieldId = () => {
@@ -59,6 +63,7 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
     return {
       ...field,
       id: field.id || createFieldId(),
+      content_html: typeof field.content_html === "string" ? field.content_html : "",
       required: Boolean(field.required),
       is_secure: Boolean(field.is_secure),
       order: typeof field.order === "number" ? field.order : undefined,
@@ -141,6 +146,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         type: field.type,
         label: field.label,
         key: field.key,
+        content_html: field.content_html ?? null,
         required: field.required,
         is_secure: field.is_secure || false,
         options: field.options || [],
@@ -210,7 +216,13 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     }
   }, [isDirty])
 
-  const fieldsPreview = useMemo(() => fields.filter((field) => field.label && field.key), [fields])
+  const fieldsPreview = useMemo(
+    () =>
+      fields.filter((field) =>
+        field.type === "content" ? Boolean(field.content_html?.trim()) : Boolean(field.label && field.key),
+      ),
+    [fields],
+  )
   const visiblePreviewFields = useMemo(() => {
     return fieldsPreview.filter((field) => {
       if (!field.conditional) return true
@@ -310,10 +322,13 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     const keys = new Set<string>()
     for (let index = 0; index < fields.length; index += 1) {
       const field = fields[index]
-      if (!field.label.trim()) return "Every field must have a label."
-      if (!field.key.trim()) return "Every field must have a key."
-      if (keys.has(field.key.trim())) return `Duplicate field key: ${field.key}`
-      keys.add(field.key.trim())
+      const resolvedKey = field.key.trim() || (field.type === "content" ? `content-${field.id}` : "")
+
+      if (field.type !== "content" && !field.label.trim()) return "Every field must have a label."
+      if (field.type !== "content" && !resolvedKey) return "Every field must have a key."
+      if (field.type === "content" && !field.content_html?.trim()) return "Every text block must contain some content."
+      if (resolvedKey && keys.has(resolvedKey)) return `Duplicate field key: ${resolvedKey}`
+      if (resolvedKey) keys.add(resolvedKey)
 
       if (field.type === "select" || field.type === "multi_select") {
         const trimmedOptions = trimOptions(field.options)
@@ -386,11 +401,14 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         field.conditional && field.conditional.field_key && field.conditional.option
           ? { field_key: field.conditional.field_key.trim(), option: field.conditional.option.trim() }
           : undefined
+      const resolvedKey = field.key.trim() || (field.type === "content" ? `content-${field.id}` : "")
       return {
         ...field,
-        key: field.key.trim(),
-        label: field.label.trim(),
-        is_secure: Boolean(field.is_secure),
+        key: resolvedKey,
+        label: field.type === "content" ? field.label.trim() : field.label.trim(),
+        content_html: field.type === "content" ? field.content_html ?? "" : undefined,
+        required: field.type === "content" ? false : field.required,
+        is_secure: field.type === "content" ? false : Boolean(field.is_secure),
         options,
         is_ranked: field.type === "multi_select" ? Boolean(field.is_ranked) : undefined,
         order: index + 1,
@@ -672,15 +690,15 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
 
                                     handleUpdateField(index, updates)
                                   }}
-                                  placeholder="Full name"
+                                  placeholder={field.type === "content" ? "Optional block title" : "Full name"}
                                 />
                               </div>
                               <div className="space-y-2">
-                                <Label>Key</Label>
+                                <Label>{field.type === "content" ? "Internal Key (optional)" : "Key"}</Label>
                                 <Input
                                   value={field.key}
                                   onChange={(e) => handleUpdateField(index, { key: e.target.value })}
-                                  placeholder="full_name"
+                                  placeholder={field.type === "content" ? "content-block" : "full_name"}
                                 />
                               </div>
                             </div>
@@ -693,6 +711,8 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                   onValueChange={(value: FormFieldType) =>
                                     handleUpdateField(index, {
                                       type: value,
+                                      required: value === "content" ? false : field.required,
+                                      is_secure: value === "content" ? false : field.is_secure ?? false,
                                       options: value === "select" || value === "multi_select" ? field.options || [] : [],
                                       is_ranked: value === "multi_select" ? field.is_ranked ?? false : false,
                                       min_count: value === "text" ? field.min_count ?? null : null,
@@ -703,6 +723,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                       allow_float: value === "rating" ? field.allow_float ?? false : undefined,
                                       min_label: value === "rating" ? field.min_label ?? "" : undefined,
                                       max_label: value === "rating" ? field.max_label ?? "" : undefined,
+                                      content_html: value === "content" ? field.content_html ?? "" : undefined,
                                     })
                                   }
                                 >
@@ -718,26 +739,38 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                   </SelectContent>
                                 </Select>
                               </div>
-                              <div className="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                  <Label className="text-sm font-medium">Required</Label>
-                                  <p className="text-xs text-muted-foreground">Field must be completed</p>
+                              {field.type === "content" ? (
+                                <div className="rounded-lg border p-3 md:col-span-2">
+                                  <Label className="text-sm font-medium">Display Only Block</Label>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    This item is shown inside the form but is not collected as a response and will not
+                                    appear in results tables or exports.
+                                  </p>
                                 </div>
-                                <Switch
-                                  checked={field.required}
-                                  onCheckedChange={(checked) => handleUpdateField(index, { required: checked })}
-                                />
-                              </div>
-                              <div className="flex items-center justify-between rounded-lg border p-3">
-                                <div>
-                                  <Label className="text-sm font-medium">Secure Field</Label>
-                                  <p className="text-xs text-muted-foreground">Hide this field on the public results page</p>
-                                </div>
-                                <Switch
-                                  checked={Boolean(field.is_secure)}
-                                  onCheckedChange={(checked) => handleUpdateField(index, { is_secure: checked })}
-                                />
-                              </div>
+                              ) : (
+                                <>
+                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                      <Label className="text-sm font-medium">Required</Label>
+                                      <p className="text-xs text-muted-foreground">Field must be completed</p>
+                                    </div>
+                                    <Switch
+                                      checked={field.required}
+                                      onCheckedChange={(checked) => handleUpdateField(index, { required: checked })}
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-between rounded-lg border p-3">
+                                    <div>
+                                      <Label className="text-sm font-medium">Secure Field</Label>
+                                      <p className="text-xs text-muted-foreground">Hide this field on the public results page</p>
+                                    </div>
+                                    <Switch
+                                      checked={Boolean(field.is_secure)}
+                                      onCheckedChange={(checked) => handleUpdateField(index, { is_secure: checked })}
+                                    />
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                             {field.type === "text" && (
@@ -899,6 +932,41 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                               </div>
                             )}
 
+                            {field.type === "image" && (
+                              <div className="rounded-lg border p-3">
+                                <p className="text-sm font-medium text-foreground">Image Upload</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  Live submissions should upload the selected file to Supabase Storage and save the
+                                  resulting public URL, or a <code className="font-mono text-[11px]">{"{ url, path }"}</code>{" "}
+                                  object, inside{" "}
+                                  <code className="font-mono text-[11px]">{`answers.${field.key || "image_field"}`}</code>.
+                                </p>
+                              </div>
+                            )}
+
+                            {field.type === "content" && (
+                              <div className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label>Text Block Content</Label>
+                                  <RichTextEditor
+                                    value={field.content_html ?? ""}
+                                    onChange={(value) => handleUpdateField(index, { content_html: value })}
+                                    placeholder="Add instructions, links, or explanatory text for this part of the form."
+                                    minHeight="220px"
+                                  />
+                                </div>
+
+                                {field.content_html?.trim() ? (
+                                  <div className="rounded-xl border border-border p-4">
+                                    {field.label?.trim() ? (
+                                      <p className="mb-3 text-sm font-medium text-foreground">{field.label}</p>
+                                    ) : null}
+                                    <ContentPreview content={field.content_html} />
+                                  </div>
+                                ) : null}
+                              </div>
+                            )}
+
                             <div className="rounded-lg border p-3 space-y-3">
                               <div className="flex items-center justify-between">
                                 <div>
@@ -1041,10 +1109,12 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                     const ratingStep = field.allow_float ? 0.1 : 1
                     return (
                       <div key={field.id} className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          {field.label}
-                          {field.required && <span className="text-xs text-destructive">*</span>}
-                        </Label>
+                        {field.type !== "content" && (
+                          <Label className="flex items-center gap-2">
+                            {field.label}
+                            {field.required && <span className="text-xs text-destructive">*</span>}
+                          </Label>
+                        )}
                         {field.type === "text" && <Input placeholder={field.label} />}
                         {field.type === "email" && <Input type="email" placeholder="name@example.com" />}
                         {field.type === "select" && (
@@ -1105,6 +1175,28 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                 <span>{field.min_label}</span>
                                 <span>{field.max_label}</span>
                               </div>
+                            )}
+                          </div>
+                        )}
+                        {field.type === "image" && (
+                          <div className="space-y-2">
+                            <Input type="file" accept="image/*" />
+                            <p className="text-xs text-muted-foreground">
+                              The live form should upload this image to Supabase Storage before saving the response.
+                            </p>
+                          </div>
+                        )}
+                        {field.type === "content" && (
+                          <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                            {field.label?.trim() ? (
+                              <p className="text-base font-semibold text-foreground">{field.label}</p>
+                            ) : null}
+                            {field.content_html?.trim() ? (
+                              <ContentPreview content={field.content_html} />
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                Add some text block content to preview instructions here.
+                              </p>
                             )}
                           </div>
                         )}

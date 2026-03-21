@@ -2,6 +2,8 @@ import { notFound } from "next/navigation"
 import { BarChart3, CalendarDays, Download, FileText, Table2 } from "lucide-react"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { buildPublicFormResults, type FormResponseRecord } from "@/lib/form-results"
+import { parseFormImageAnswer } from "@/lib/form-image-storage"
+import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import type { Form, FormField } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -32,8 +34,6 @@ const dateTime = new Intl.DateTimeFormat("en-US", {
   minute: "2-digit",
 })
 
-const getSortedFields = (form: Form) => [...(form.schema?.fields || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-
 const serializeCellValue = (value: unknown, field: FormField) => {
   if (value === null || value === undefined || value === "") {
     return ""
@@ -45,6 +45,10 @@ const serializeCellValue = (value: unknown, field: FormField) => {
 
   if (Array.isArray(value)) {
     return value.length ? value.map((item) => String(item)).join(", ") : ""
+  }
+
+  if (field.type === "image") {
+    return parseFormImageAnswer(value)?.url || ""
   }
 
   if (typeof value === "object") {
@@ -153,12 +157,13 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
   }
 
   const { form, responses, results } = data
-  const fields = getSortedFields(form)
+  const fields = getSortedFormFields(form).filter(isAnswerableFormField)
   const tableFields: PublicResultsField[] = fields.map((field) => ({
     id: field.id,
     key: field.key,
     label: field.label,
     isSecure: Boolean(field.is_secure),
+    type: field.type,
   }))
   const tableRows: PublicResultsRow[] = responses.map((response) => ({
     id: response.id,
@@ -223,7 +228,7 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
           <div className="max-w-3xl">
             <h2 className="text-2xl font-semibold text-foreground">Submission Records</h2>
             <p className="mt-2 text-muted-foreground">
-              Each row represents a single submission. All form fields are shown as columns so you can review each
+              Each row represents a single submission. All answer fields are shown as columns so you can review each
               person&apos;s record in one place.
             </p>
           </div>

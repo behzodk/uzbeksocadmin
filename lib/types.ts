@@ -155,7 +155,7 @@ export interface Newsletter {
   updated_at: string
 }
 
-export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean" | "rating"
+export type FormFieldType = "text" | "email" | "select" | "multi_select" | "boolean" | "rating" | "image" | "content"
 
 export interface FieldConditional {
   field_key: string
@@ -167,6 +167,7 @@ export interface FormField {
   type: FormFieldType
   label: string
   key: string
+  content_html?: string | null
   required: boolean
   is_secure?: boolean
   options?: string[]

@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server"
 import ExcelJS from "exceljs"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
+import { parseFormImageAnswer } from "@/lib/form-image-storage"
+import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import type { Form, FormField } from "@/lib/types"
 import type { FormResponseRecord } from "@/lib/form-results"
-
-const getSortedFields = (form: Form) => [...(form.schema?.fields || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
 const serializeCellValue = (value: unknown, field: FormField) => {
   if (value === null || value === undefined || value === "") return ""
   if (typeof value === "boolean") return value ? "Yes" : "No"
   if (Array.isArray(value)) return value.length ? value.map((item) => String(item)).join(", ") : ""
+  if (field.type === "image") return parseFormImageAnswer(value)?.url || ""
   if (typeof value === "object") return JSON.stringify(value)
   if (field.type === "email") return String(value).toLowerCase()
   return String(value)
@@ -52,7 +53,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
   const typedForm = form as Form
   const typedResponses = responses as FormResponseRecord[]
-  const fields = getSortedFields(typedForm)
+  const fields = getSortedFormFields(typedForm).filter(isAnswerableFormField)
 
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet(sanitizeSheetName(typedForm.title))

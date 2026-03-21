@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import type { Form } from "@/lib/types"
+import { countAnswerableFormFields } from "@/lib/form-schema"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import { DataTable } from "@/components/dashboard/data-table"
 import { ConfirmDialog } from "@/components/dashboard/confirm-dialog"
@@ -71,7 +72,7 @@ export function FormsClient({ initialForms }: FormsClientProps) {
     {
       key: "schema",
       header: "Fields",
-      render: (form: Form) => <span className="text-sm">{form.schema?.fields?.length || 0}</span>,
+      render: (form: Form) => <span className="text-sm">{countAnswerableFormFields(form.schema?.fields || [])}</span>,
     },
     {
       key: "created_at",

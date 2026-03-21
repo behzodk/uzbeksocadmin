@@ -1,4 +1,6 @@
 import type { Form, FormField } from "@/lib/types"
+import { parseFormImageAnswer } from "@/lib/form-image-storage"
+import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 
 export interface FormResponseRecord {
   id: string
@@ -28,7 +30,7 @@ export interface RankedBreakdown {
 
 export type PublicFieldAnalytics =
   | {
-      type: "text" | "email"
+      type: "text" | "email" | "image"
       field: FieldMeta
       responseCount: number
       completionRate: number
@@ -84,8 +86,6 @@ const normalizeFieldMeta = (field: FormField): FieldMeta => ({
   label: field.label,
   type: field.type,
 })
-
-const getSortedFields = (form: Form) => [...(form.schema?.fields || [])].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
 const getFieldValues = (responses: FormResponseRecord[], fieldKey: string) =>
   responses.map((response) => response.answers?.[fieldKey]).filter((value) => value !== undefined)
@@ -156,8 +156,9 @@ const runBorda = (ballots: string[][], options: string[]) => {
 }
 
 export function buildPublicFormResults(form: Form, responses: FormResponseRecord[]): PublicFormResultsData {
-  const sortedFields = getSortedFields(form)
+  const sortedFields = getSortedFormFields(form)
   const publicAnalyticsFields = sortedFields.filter((field) => !field.is_secure)
+  const answerableFields = publicAnalyticsFields.filter(isAnswerableFormField)
   const totalResponses = responses.length
   const latestResponse = responses[0]?.created_at || null
 
@@ -172,7 +173,7 @@ export function buildPublicFormResults(form: Form, responses: FormResponseRecord
     percentage: roundPercentage(count, totalResponses),
   }))
 
-  const analytics: PublicFieldAnalytics[] = publicAnalyticsFields.map((field) => {
+  const analytics: PublicFieldAnalytics[] = answerableFields.map((field) => {
     const values = getFieldValues(responses, field.key)
     const responseCount = values.length
     const completionRate = roundPercentage(responseCount, totalResponses)
@@ -185,6 +186,20 @@ export function buildPublicFormResults(form: Form, responses: FormResponseRecord
         responseCount,
         completionRate,
         values: values.map((value) => (typeof value === "string" ? value : JSON.stringify(value))),
+      }
+    }
+
+    if (field.type === "image") {
+      const imageUrls = values
+        .map((value) => parseFormImageAnswer(value)?.url || null)
+        .filter(Boolean) as string[]
+
+      return {
+        type: "image",
+        field: fieldMeta,
+        responseCount: imageUrls.length,
+        completionRate: roundPercentage(imageUrls.length, totalResponses),
+        values: imageUrls,
       }
     }
 
@@ -312,7 +327,7 @@ export function buildPublicFormResults(form: Form, responses: FormResponseRecord
 
   return {
     totalResponses,
-    fieldCount: sortedFields.length,
+    fieldCount: answerableFields.length,
     latestResponse,
     statusCounts,
     analytics,

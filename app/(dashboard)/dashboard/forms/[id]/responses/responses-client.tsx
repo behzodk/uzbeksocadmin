@@ -1,6 +1,8 @@
 "use client"
 
 import { useMemo } from "react"
+import { parseFormImageAnswer } from "@/lib/form-image-storage"
+import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import type { Form, FormField } from "@/lib/types"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { StatsCard } from "@/components/dashboard/stats-card"
@@ -28,7 +30,7 @@ const truncateLabel = (value: string, max = 28) => {
   return `${value.slice(0, max - 1)}…`
 }
 
-function renderValue(value: unknown) {
+function renderValue(value: unknown, field?: FormField) {
   if (Array.isArray(value)) {
     return (
       <ul className="list-disc pl-5 space-y-1">
@@ -37,6 +39,18 @@ function renderValue(value: unknown) {
         ))}
       </ul>
     )
+  }
+
+  if (field?.type === "image") {
+    const image = parseFormImageAnswer(value)
+    if (image) {
+      return (
+        <a href={image.url} target="_blank" rel="noreferrer" className="block max-w-sm space-y-2">
+          <img src={image.url} alt={field.label} className="max-h-48 w-full rounded-lg border border-border object-cover" />
+          <span className="text-xs font-medium text-primary">{image.fileName || "Open image"}</span>
+        </a>
+      )
+    }
   }
 
   if (value && typeof value === "object") {
@@ -62,10 +76,9 @@ function getFieldOptions(field: FormField, values: unknown[]) {
 }
 
 export function FormResponsesClient({ form, responses }: FormResponsesClientProps) {
-  const sortedFields = useMemo(() => {
-    const fields = form.schema?.fields || []
-    return [...fields].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-  }, [form.schema?.fields])
+  const sortedFields = useMemo(() => getSortedFormFields(form), [form])
+  const answerableFields = useMemo(() => sortedFields.filter(isAnswerableFormField), [sortedFields])
+  const fieldLookup = useMemo(() => new Map(sortedFields.map((field) => [field.key, field])), [sortedFields])
 
   const totalResponses = responses.length
   const latestResponse = responses[0]?.created_at
@@ -79,7 +92,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
   }, [responses])
 
   const analytics = useMemo(() => {
-    return sortedFields.map((field) => {
+    return answerableFields.map((field) => {
       const values = responses
         .map((response) => response.answers?.[field.key])
         .filter((value) => value !== undefined)
@@ -167,7 +180,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
         total: values.length,
       }
     })
-  }, [responses, sortedFields])
+  }, [answerableFields, responses])
 
   const electionStats = useMemo(() => {
     return analytics
@@ -265,7 +278,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
       const workbook = new ExcelJS.Workbook()
       const worksheet = workbook.addWorksheet("Responses")
 
-      const fields = form.schema?.fields || []
+      const fields = answerableFields
 
       // Define columns
       const columns = [
@@ -572,7 +585,7 @@ export function FormResponsesClient({ form, responses }: FormResponsesClientProp
                   Object.entries(response.answers).map(([key, value]) => (
                     <div key={key} className="grid gap-2 sm:grid-cols-[180px_1fr]">
                       <span className="text-sm font-medium text-foreground">{key}</span>
-                      <div className="text-sm text-muted-foreground">{renderValue(value)}</div>
+                      <div className="text-sm text-muted-foreground">{renderValue(value, fieldLookup.get(key))}</div>
                     </div>
                   ))
                 ) : (
