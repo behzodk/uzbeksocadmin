@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation"
-import { Download, Globe, Table2 } from "lucide-react"
+import { Download, Table2 } from "lucide-react"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 import { normalizeFormPartners } from "@/lib/form-partners"
 import { buildPublicFormResults, type FormResponseRecord } from "@/lib/form-results"
 import { parseFormImageAnswer } from "@/lib/form-image-storage"
 import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import type { Form, FormField } from "@/lib/types"
+import { PublicFormPartners } from "@/components/forms/public-form-partners"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -79,13 +80,27 @@ const formatCellValue = (value: unknown, field: FormField) => {
 
 async function getPublicFormResults(id: string) {
   const supabase = getSupabaseAdminClient()
-  const { data: form, error: formError } = await supabase
+  const { data: formById, error: formByIdError } = await supabase
     .from("forms")
     .select("id, slug, title, is_active, max_response, schema, partners, event_id, created_at")
     .eq("id", id)
-    .single()
+    .maybeSingle()
 
-  if (formError || !form) {
+  if (formByIdError) {
+    return null
+  }
+
+  const form =
+    formById ||
+    (
+      await supabase
+        .from("forms")
+        .select("id, slug, title, is_active, max_response, schema, partners, event_id, created_at")
+        .eq("slug", id)
+        .maybeSingle()
+    ).data
+
+  if (!form) {
     return null
   }
 
@@ -205,33 +220,7 @@ export default async function PublicFormResultsPage({ params }: PageProps) {
                   </a>
                 </Button>
 
-                {partners.length > 0 ? (
-                  <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                      <Globe className="h-4 w-4" />
-                      Featured Partners
-                    </div>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                      {partners.map((partner) => (
-                        <a
-                          key={partner.id}
-                          href={partner.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40"
-                        >
-                          <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-muted/40 p-2">
-                            <img src={partner.logo_url} alt={partner.name} className="max-h-full max-w-full object-contain" />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground">{partner.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">{partner.url}</p>
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+                <PublicFormPartners partners={partners} />
               </div>
             </div>
 

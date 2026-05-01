@@ -4,6 +4,28 @@ export const MAX_FORM_PARTNERS = 2
 
 const readString = (value: unknown) => (typeof value === "string" ? value.trim() : "")
 
+function parsePartnerValue(value: unknown): unknown[] {
+  if (Array.isArray(value)) {
+    return value
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim()
+    if (!trimmed) {
+      return []
+    }
+
+    try {
+      const parsed = JSON.parse(trimmed)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
 export function createFormPartnerId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID()
@@ -23,13 +45,11 @@ export function createEmptyFormPartner(): FormPartner {
 }
 
 export function normalizeFormPartners(value: unknown): FormPartner[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
+  const partnerList = parsePartnerValue(value)
 
   const normalizedPartners: FormPartner[] = []
 
-  value.forEach((partner) => {
+  partnerList.forEach((partner) => {
     if (!partner || typeof partner !== "object") {
       return
     }
