@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import { uploadFormImage } from "@/lib/form-image-storage"
@@ -469,22 +470,37 @@ export function PublicFormClient({ form }: { form: Form }) {
             ) : null}
 
             {field.type === "select" ? (
-              <Select value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)}>
-                <SelectTrigger id={field.key} className="w-full" aria-invalid={Boolean(error)}>
-                  <SelectValue placeholder="Select an option" />
-                </SelectTrigger>
-                <SelectContent>
+              field.use_radio_buttons ? (
+                <RadioGroup value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)} className="gap-3">
                   {options.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option}
-                    </SelectItem>
+                    <label
+                      key={option}
+                      htmlFor={`${field.key}-${option}`}
+                      className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background px-4 py-3 transition-colors hover:border-primary/40"
+                    >
+                      <RadioGroupItem id={`${field.key}-${option}`} value={option} aria-invalid={Boolean(error)} />
+                      <span className="text-sm text-foreground">{option}</span>
+                    </label>
                   ))}
-                </SelectContent>
-              </Select>
+                </RadioGroup>
+              ) : (
+                <Select value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)}>
+                  <SelectTrigger id={field.key} className="w-full" aria-invalid={Boolean(error)}>
+                    <SelectValue placeholder="Select an option" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
             ) : null}
 
             {field.type === "multi_select" && !field.is_ranked ? (
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className={field.use_radio_buttons ? "space-y-3" : "grid gap-3 sm:grid-cols-2"}>
                 {options.map((option) => {
                   const checked = multiValue.includes(option)
                   return (

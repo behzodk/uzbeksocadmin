@@ -78,6 +78,7 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
       content_html: typeof field.content_html === "string" ? field.content_html : "",
       required: Boolean(field.required),
       is_secure: Boolean(field.is_secure),
+      use_radio_buttons: Boolean(field.use_radio_buttons),
       order: typeof field.order === "number" ? field.order : undefined,
       conditional:
         conditional && conditional.field_key && conditional.option
@@ -171,6 +172,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         required: field.required,
         is_secure: field.is_secure || false,
         options: field.options || [],
+        use_radio_buttons: field.use_radio_buttons || false,
         is_ranked: field.is_ranked || false,
         order: index + 1,
         min_count: field.min_count ?? null,
@@ -275,6 +277,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         key: "",
         required: false,
         is_secure: false,
+        use_radio_buttons: false,
         is_ranked: false,
         min_count: null,
         max_count: 255,
@@ -338,6 +341,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         key: "",
         required: false,
         is_secure: false,
+        use_radio_buttons: false,
         is_ranked: false,
         min_count: null,
         max_count: 255,
@@ -485,6 +489,10 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         required: field.type === "content" ? false : field.required,
         is_secure: field.type === "content" ? false : Boolean(field.is_secure),
         options,
+        use_radio_buttons:
+          field.type === "select" || (field.type === "multi_select" && !Boolean(field.is_ranked))
+            ? Boolean(field.use_radio_buttons)
+            : false,
         is_ranked: field.type === "multi_select" ? Boolean(field.is_ranked) : undefined,
         order: index + 1,
         min_count: field.type === "text" ? field.min_count ?? null : undefined,
@@ -892,6 +900,10 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                       required: value === "content" ? false : field.required,
                                       is_secure: value === "content" ? false : field.is_secure ?? false,
                                       options: value === "select" || value === "multi_select" ? field.options || [] : [],
+                                      use_radio_buttons:
+                                        value === "select" || value === "multi_select"
+                                          ? field.use_radio_buttons ?? false
+                                          : false,
                                       is_ranked: value === "multi_select" ? field.is_ranked ?? false : false,
                                       min_count: value === "text" ? field.min_count ?? null : null,
                                       max_count: value === "text" ? field.max_count ?? null : null,
@@ -998,7 +1010,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                             )}
 
                             {(field.type === "select" || field.type === "multi_select") && (
-                              <div className="space-y-2">
+                              <div className="space-y-3">
                                 <Label>Options (one per line)</Label>
                                 <Textarea
                                   value={(field.options || []).join("\n")}
@@ -1010,6 +1022,19 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                   placeholder={"Option A\nOption B\nOption C"}
                                   rows={4}
                                 />
+                                <div className="flex items-center justify-between rounded-lg border p-3">
+                                  <div>
+                                    <Label className="text-sm font-medium">Use Radio Buttons</Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      Show choices inline instead of a dropdown. Multi-select keeps checkbox behavior.
+                                    </p>
+                                  </div>
+                                  <Switch
+                                    disabled={field.type === "multi_select" && Boolean(field.is_ranked)}
+                                    checked={Boolean(field.use_radio_buttons)}
+                                    onCheckedChange={(checked) => handleUpdateField(index, { use_radio_buttons: checked })}
+                                  />
+                                </div>
                                 {field.type === "multi_select" && (
                                   <div className="flex items-center justify-between rounded-lg border p-3">
                                     <div>
@@ -1018,7 +1043,12 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                                     </div>
                                     <Switch
                                       checked={Boolean(field.is_ranked)}
-                                      onCheckedChange={(checked) => handleUpdateField(index, { is_ranked: checked })}
+                                      onCheckedChange={(checked) =>
+                                        handleUpdateField(index, {
+                                          is_ranked: checked,
+                                          use_radio_buttons: checked ? false : Boolean(field.use_radio_buttons),
+                                        })
+                                      }
                                     />
                                   </div>
                                 )}
@@ -1323,20 +1353,30 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                         )}
                         {field.type === "text" && <Input placeholder={field.label} />}
                         {field.type === "email" && <Input type="email" placeholder="name@example.com" />}
-                        {field.type === "select" && (
-                          <Select value={selectValue} onValueChange={(value) => handlePreviewSelectChange(field.key, value)}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select an option" />
-                            </SelectTrigger>
-                            <SelectContent>
+                        {field.type === "select" &&
+                          (field.use_radio_buttons ? (
+                            <div className="space-y-2">
                               {previewOptions.map((option) => (
-                                <SelectItem key={option} value={option}>
+                                <label key={option} className="flex items-center gap-2 text-sm">
+                                  <input type="radio" name={`preview-${field.key}`} className="h-4 w-4" disabled />
                                   {option}
-                                </SelectItem>
+                                </label>
                               ))}
-                            </SelectContent>
-                          </Select>
-                        )}
+                            </div>
+                          ) : (
+                            <Select value={selectValue} onValueChange={(value) => handlePreviewSelectChange(field.key, value)}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select an option" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {previewOptions.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ))}
                         {field.type === "multi_select" && (
                           <div className="space-y-2">
                             {previewOptions.map((option) => (

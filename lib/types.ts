@@ -171,6 +171,7 @@ export interface FormField {
   required: boolean
   is_secure?: boolean
   options?: string[]
+  use_radio_buttons?: boolean
   is_ranked?: boolean
   order?: number
   min_count?: number | null
