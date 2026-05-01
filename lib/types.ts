@@ -189,6 +189,14 @@ export interface FormSchema {
   fields: FormField[]
 }
 
+export interface FormPartner {
+  id: string
+  name: string
+  logo_url: string
+  logo_path: string | null
+  url: string
+}
+
 export interface Form {
   id: string
   slug: string
@@ -196,6 +204,7 @@ export interface Form {
   is_active: boolean
   max_response: number | null
   schema: FormSchema
+  partners: FormPartner[]
   event_id: string | null
   created_at: string
 }

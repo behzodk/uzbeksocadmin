@@ -33,7 +33,7 @@ export async function GET(_request: Request, context: { params: Promise<{ id: st
 
   const { data: form, error: formError } = await supabase
     .from("forms")
-    .select("id, slug, title, is_active, max_response, schema, event_id, created_at")
+    .select("id, slug, title, is_active, max_response, schema, partners, event_id, created_at")
     .eq("id", id)
     .single()
 

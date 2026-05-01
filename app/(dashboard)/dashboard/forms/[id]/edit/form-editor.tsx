@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { FormPartnerLogoUploadField } from "@/components/forms/form-partner-logo-upload-field"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { RichTextEditor } from "@/components/editor/rich-text-editor"
-import type { Form, FormField, FormSchema, FormFieldType } from "@/lib/types"
+import { createEmptyFormPartner, MAX_FORM_PARTNERS, normalizeFormPartners } from "@/lib/form-partners"
+import { removeFormImage } from "@/lib/form-image-storage"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
+import type { Form, FormField, FormFieldType, FormPartner, FormSchema } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,7 +18,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Plus, Trash2, Star } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Globe, Plus, Star, Trash2 } from "lucide-react"
 
 interface EventOption {
   id: string
@@ -51,6 +54,15 @@ const slugify = (value: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "")
+
+const isValidUrl = (value: string) => {
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
 
 const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
   if (!schema || !Array.isArray(schema.fields)) {
@@ -94,6 +106,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   })
 
   const [fields, setFields] = useState<FormField[]>(() => normalizeSchema(form?.schema).fields)
+  const [partners, setPartners] = useState<FormPartner[]>(() => normalizeFormPartners(form?.partners))
   const [previewValues, setPreviewValues] = useState<Record<string, string | boolean | string[] | number>>({})
 
   const trimOptions = (options?: string[]) => (options || []).map((opt) => opt.trim()).filter(Boolean)
@@ -132,6 +145,14 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     }
   }, [form, formMeta.slug, formMeta.title])
 
+  const partnerLogoFolder = useMemo(() => {
+    if (form?.id) {
+      return `forms/${form.id}/partners`
+    }
+
+    return `forms/drafts/${slugify(formMeta.slug || formMeta.title || "untitled-form") || "untitled-form"}/partners`
+  }, [form?.id, formMeta.slug, formMeta.title])
+
   const currentSnapshot = useMemo(() => {
     return JSON.stringify({
       meta: {
@@ -164,8 +185,15 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         conditional: field.conditional || null,
         is_student_email: field.is_student_email || false,
       })),
+      partners: partners.map((partner) => ({
+        id: partner.id,
+        name: partner.name.trim(),
+        logo_url: partner.logo_url.trim(),
+        logo_path: partner.logo_path || null,
+        url: partner.url.trim(),
+      })),
     })
-  }, [fields, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title])
+  }, [fields, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title, partners])
 
   useEffect(() => {
     if (!initialSnapshotRef.current) {
@@ -275,6 +303,31 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     updateFields((prev) => prev.map((field, i) => (i === index ? { ...field, ...updates } : field)))
   }
 
+  const handleAddPartner = () => {
+    setPartners((prev) => (prev.length >= MAX_FORM_PARTNERS ? prev : [...prev, createEmptyFormPartner()]))
+  }
+
+  const handleUpdatePartner = (index: number, updates: Partial<FormPartner>) => {
+    setPartners((prev) => prev.map((partner, i) => (i === index ? { ...partner, ...updates } : partner)))
+  }
+
+  const handleRemovePartner = async (index: number) => {
+    const partner = partners[index]
+
+    if (partner?.logo_path) {
+      try {
+        await removeFormImage({
+          supabase: getSupabaseBrowserClient(),
+          storagePath: partner.logo_path,
+        })
+      } catch (cleanupError) {
+        console.error("Failed to remove partner logo:", cleanupError)
+      }
+    }
+
+    setPartners((prev) => prev.filter((_, i) => i !== index))
+  }
+
   const handleInsertFieldAfter = (index: number) => {
     updateFields((prev) => {
       const next = [...prev]
@@ -317,6 +370,28 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         return "Max responses must be a whole number greater than or equal to 0."
       }
     }
+    if (partners.length > MAX_FORM_PARTNERS) {
+      return `A form can feature up to ${MAX_FORM_PARTNERS} partners.`
+    }
+
+    for (const partner of partners) {
+      const name = partner.name.trim()
+      const logoUrl = partner.logo_url.trim()
+      const url = partner.url.trim()
+      const hasAnyPartnerData = Boolean(name || logoUrl || url)
+
+      if (!hasAnyPartnerData) continue
+      if (!name || !logoUrl || !url) {
+        return "Each partner needs a name, logo, and URL."
+      }
+      if (!isValidUrl(logoUrl)) {
+        return `Partner logo URL for "${name}" is invalid.`
+      }
+      if (!isValidUrl(url)) {
+        return `Partner URL for "${name}" is invalid.`
+      }
+    }
+
     if (fields.length === 0) return "Add at least one field to the form."
 
     const keys = new Set<string>()
@@ -432,6 +507,16 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       }
     })
 
+    const cleanedPartners = partners
+      .map((partner) => ({
+        id: partner.id,
+        name: partner.name.trim(),
+        logo_url: partner.logo_url.trim(),
+        logo_path: partner.logo_path || null,
+        url: partner.url.trim(),
+      }))
+      .filter((partner) => partner.name || partner.logo_url || partner.url)
+
     const payload = {
       title: formMeta.title.trim(),
       slug: formMeta.slug.trim(),
@@ -439,6 +524,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
       event_id: formMeta.event_id || null,
       schema: { fields: cleanedFields } satisfies FormSchema,
+      partners: cleanedPartners,
     }
 
     const supabase = getSupabaseBrowserClient()
@@ -479,6 +565,11 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     }
     router.push("/dashboard/forms")
   }
+
+  const previewPartners = useMemo(
+    () => partners.filter((partner) => partner.name.trim() && partner.logo_url.trim() && partner.url.trim()),
+    [partners],
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -607,6 +698,93 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <CardTitle>Featured Partners</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Add up to {MAX_FORM_PARTNERS} partners with a name, website, and logo.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleAddPartner}
+                  className="gap-2"
+                  disabled={partners.length >= MAX_FORM_PARTNERS}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Partner
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {partners.length === 0 ? (
+                  <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+                    No partners added yet.
+                  </div>
+                ) : (
+                  partners.map((partner, index) => (
+                    <Card key={partner.id} className="border-dashed">
+                      <CardContent className="space-y-4 pt-6">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">Partner {index + 1}</p>
+                            <p className="text-xs text-muted-foreground">Shown on the public form experience.</p>
+                          </div>
+                          <Button type="button" variant="ghost" size="icon" onClick={() => void handleRemovePartner(index)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div className="space-y-2">
+                            <Label htmlFor={`partner-name-${partner.id}`}>Partner Name</Label>
+                            <Input
+                              id={`partner-name-${partner.id}`}
+                              value={partner.name}
+                              onChange={(e) => handleUpdatePartner(index, { name: e.target.value })}
+                              placeholder="Sponsor name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor={`partner-url-${partner.id}`}>Partner URL</Label>
+                            <Input
+                              id={`partner-url-${partner.id}`}
+                              type="url"
+                              value={partner.url}
+                              onChange={(e) => handleUpdatePartner(index, { url: e.target.value })}
+                              placeholder="https://partner.example"
+                            />
+                          </div>
+                        </div>
+
+                        <FormPartnerLogoUploadField
+                          id={`partner-logo-${partner.id}`}
+                          label="Partner Logo"
+                          imageUrl={partner.logo_url}
+                          storagePath={partner.logo_path}
+                          folder={partnerLogoFolder}
+                          hint="Upload a square or landscape logo for the form header."
+                          onChange={({ imageUrl, storagePath }) =>
+                            handleUpdatePartner(index, {
+                              logo_url: imageUrl,
+                              logo_path: storagePath,
+                            })
+                          }
+                          onClear={() =>
+                            handleUpdatePartner(index, {
+                              logo_url: "",
+                              logo_path: null,
+                            })
+                          }
+                        />
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </CardContent>
             </Card>
 
@@ -1092,6 +1270,34 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                 <h2 className="text-2xl font-semibold text-foreground">{formMeta.title || "Untitled Form"}</h2>
                 <p className="text-sm text-muted-foreground">/{formMeta.slug || "form-slug"}</p>
               </div>
+
+              {previewPartners.length > 0 ? (
+                <div className="rounded-2xl border border-border bg-muted/20 p-4">
+                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                    <Globe className="h-4 w-4" />
+                    Featured Partners
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {previewPartners.map((partner) => (
+                      <a
+                        key={partner.id}
+                        href={partner.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40"
+                      >
+                        <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-muted/40 p-2">
+                          <img src={partner.logo_url} alt={partner.name} className="max-h-full max-w-full object-contain" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground">{partner.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">{partner.url}</p>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="space-y-4">
                 {fieldsPreview.length === 0 ? (
