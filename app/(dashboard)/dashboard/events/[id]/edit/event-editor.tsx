@@ -9,12 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
-import { ArrowLeft, Save, Eye, Edit3, Globe, Calendar, MapPin, Users, ImageIcon, Loader2, Plus, X, Trash2, List, Star, Tag } from "lucide-react"
+import { AlertCircle, ArrowLeft, Save, Eye, Edit3, Globe, Calendar, MapPin, Users, ImageIcon, Loader2, Plus, X, Trash2, List, Star, Tag } from "lucide-react"
 
 interface EventEditorProps {
   event: Event | null
@@ -24,6 +25,7 @@ export function EventEditor({ event }: EventEditorProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState("edit")
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const STANDARD_TYPES = ["conference", "workshop", "webinar", "meetup", "social", "other"]
   const initialIsCustom = event?.event_type ? !STANDARD_TYPES.includes(event.event_type) : false
@@ -62,34 +64,56 @@ export function EventEditor({ event }: EventEditorProps) {
   }, [formData.title, event])
 
   const handleSubmit = async () => {
+    const title = formData.title.trim()
+    const startDate = formData.start_date.trim()
+
+    if (!title) {
+      setSubmitError("Event title is required.")
+      return
+    }
+
+    if (!startDate) {
+      setSubmitError("Start date is required.")
+      return
+    }
+
     setIsLoading(true)
+    setSubmitError(null)
     const supabase = getSupabaseBrowserClient()
+    const sharedImage = formData.cover_image || formData.featured_image || formData.image_url || null
 
     const data = {
-      title: formData.title,
-      slug: formData.slug,
-      description: formData.description,
-      content_html: formData.content_html,
+      title,
+      slug: formData.slug || null,
+      description: formData.description || null,
+      content_html: formData.content_html || null,
       location: formData.location || null,
-      start_date: formData.start_date,
+      start_date: startDate,
       end_date: formData.end_date || null,
       capacity: formData.capacity ? Number.parseInt(formData.capacity) : null,
       status: formData.status as Event["status"],
       visibility: formData.visibility as Event["visibility"],
       event_type: formData.event_type,
       is_featured: formData.is_featured,
-      cover_image: formData.cover_image || null,
-      featured_image: formData.featured_image || null,
-      image_url: formData.image_url || null,
+      featured_image: formData.featured_image || sharedImage,
+      image_url: formData.image_url || sharedImage,
       highlights: formData.highlights,
       what_to_bring: formData.what_to_bring,
       schedule: formData.schedule,
     }
 
-    if (event) {
-      await supabase.from("events").update(data).eq("id", event.id)
-    } else {
-      await supabase.from("events").insert(data)
+    const result = event
+      ? await supabase.from("events").update(data).eq("id", event.id)
+      : await supabase.from("events").insert(data)
+
+    if (result.error) {
+      const schemaHint =
+        /schema cache|column .* does not exist|Could not find the .* column/i.test(result.error.message)
+          ? " Your Supabase events table is missing one or more newer event columns. Run scripts 003-007."
+          : ""
+      setSubmitError(`${result.error.message}${schemaHint}`)
+      setIsLoading(false)
+      return
     }
 
     setIsLoading(false)
@@ -190,6 +214,14 @@ export function EventEditor({ event }: EventEditorProps) {
 
       {/* Content */}
       <div className="mx-auto max-w-7xl p-4 sm:p-6">
+        {submitError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Unable To Save Event</AlertTitle>
+            <AlertDescription>{submitError}</AlertDescription>
+          </Alert>
+        )}
+
         {activeTab === "edit" ? (
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Main Content */}

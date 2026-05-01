@@ -11,6 +11,7 @@ export interface AdminRoles {
   news: ResourcePermissions
   events: ResourcePermissions
   competitions: ResourcePermissions
+  google_photos: ResourcePermissions
 }
 
 type PartialAdminRoles = Partial<AdminRoles> & {
@@ -18,9 +19,10 @@ type PartialAdminRoles = Partial<AdminRoles> & {
   news?: Partial<ResourcePermissions>
   events?: Partial<ResourcePermissions>
   competitions?: Partial<ResourcePermissions>
+  google_photos?: Partial<ResourcePermissions>
 }
 
-export type AdminResource = "forms" | "news" | "events" | "competitions"
+export type AdminResource = "forms" | "news" | "events" | "competitions" | "google_photos"
 
 export const DEFAULT_PERMISSIONS: ResourcePermissions = {
   read: false,
@@ -34,6 +36,7 @@ export const ADMIN_RESOURCES = [
   { key: "news", label: "News" },
   { key: "events", label: "Events" },
   { key: "competitions", label: "Competetion" },
+  { key: "google_photos", label: "Google Photos" },
 ] as const satisfies ReadonlyArray<{ key: AdminResource; label: string }>
 
 export function createDefaultAdminRoles(): AdminRoles {
@@ -43,6 +46,7 @@ export function createDefaultAdminRoles(): AdminRoles {
     news: { ...DEFAULT_PERMISSIONS },
     events: { ...DEFAULT_PERMISSIONS },
     competitions: { ...DEFAULT_PERMISSIONS },
+    google_photos: { ...DEFAULT_PERMISSIONS },
   }
 }
 
@@ -56,5 +60,6 @@ export function mergeAdminRoles(roles?: PartialAdminRoles | null): AdminRoles {
     news: { ...defaults.news, ...roles?.news },
     events: { ...defaults.events, ...roles?.events },
     competitions: { ...defaults.competitions, ...roles?.competitions },
+    google_photos: { ...defaults.google_photos, ...roles?.google_photos },
   }
 }

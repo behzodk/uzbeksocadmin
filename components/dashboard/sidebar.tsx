@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield, Menu, Trophy } from "lucide-react"
+import { LayoutDashboard, Calendar, Mail, FileText, ChevronLeft, ChevronRight, Shield, Menu, Trophy, Images } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useRoles } from "@/components/dashboard/role-provider"
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
   { href: "/dashboard/events", label: "Events", icon: Calendar },
   { href: "/dashboard/competetion", label: "Competetion", icon: Trophy },
+  { href: "/dashboard/google-photos", label: "Google Photos", icon: Images },
   { href: "/dashboard/news", label: "News", icon: Mail },
   { href: "/dashboard/forms", label: "Forms", icon: FileText },
   { href: "/dashboard/admins", label: "Admins", icon: Shield },
@@ -35,6 +36,7 @@ function SidebarNavContent({ collapsed = false, onNavigate, mobile = false }: Si
 
     if (item.href === "/dashboard/events") return roles.events?.read
     if (item.href === "/dashboard/competetion") return roles.competitions?.read
+    if (item.href === "/dashboard/google-photos") return roles.google_photos?.read
     if (item.href === "/dashboard/news") return roles.news?.read
     if (item.href === "/dashboard/forms") return roles.forms?.read
     if (item.href === "/dashboard/admins") return false

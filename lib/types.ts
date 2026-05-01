@@ -208,6 +208,30 @@ export interface FormSubmission {
   created_at: string
 }
 
+export interface EventPhotoAsset {
+  id: string
+  event_id: string
+  file_name: string
+  storage_path: string
+  public_url: string
+  mime_type: string | null
+  file_size: number | null
+  created_at: string
+}
+
+export interface EventPhotoArchive {
+  id: string
+  event_id: string
+  file_name: string
+  storage_path: string
+  public_url: string
+  asset_count: number
+  file_size: number | null
+  photo_asset_ids: string[]
+  created_by: string | null
+  created_at: string
+}
+
 export interface DashboardStats {
   totalMembers: number
   activeMembers: number
