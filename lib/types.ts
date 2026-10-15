@@ -199,6 +199,7 @@ export interface FormPartner {
 }
 
 export interface Form {
+  description?: string | null
   id: string
   slug: string
   title: string

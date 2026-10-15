@@ -1,7 +1,7 @@
 import type { Form } from "@/lib/types"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
 
-const PUBLIC_FORM_SELECT = "id, slug, title, is_active, max_response, schema, partners, event_id, created_at"
+const PUBLIC_FORM_SELECT = "id, slug, title, description, is_active, max_response, schema, partners, event_id, created_at"
 
 export interface PublicFormRecord extends Form {
   response_count: number

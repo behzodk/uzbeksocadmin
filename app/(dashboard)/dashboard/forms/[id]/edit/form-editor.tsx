@@ -100,6 +100,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
 
   const [formMeta, setFormMeta] = useState({
     title: form?.title || "",
+    description: form?.description || "",
     slug: form?.slug || "",
     is_active: form?.is_active ?? true,
     max_response: form?.max_response === null || form?.max_response === undefined ? "" : String(form.max_response),
@@ -158,6 +159,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
     return JSON.stringify({
       meta: {
         title: formMeta.title,
+        description: formMeta.description,
         slug: formMeta.slug,
         is_active: formMeta.is_active,
         max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
@@ -195,7 +197,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         url: partner.url.trim(),
       })),
     })
-  }, [fields, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title, partners])
+  }, [fields, formMeta.description, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title, partners])
 
   useEffect(() => {
     if (!initialSnapshotRef.current) {
@@ -527,6 +529,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
 
     const payload = {
       title: formMeta.title.trim(),
+      description: formMeta.description.trim() || null,
       slug: formMeta.slug.trim(),
       is_active: formMeta.is_active,
       max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
@@ -650,6 +653,18 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                       placeholder="event-registration"
                     />
                   </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="form-description">Description (optional)</Label>
+                  <Textarea
+                    id="form-description"
+                    value={formMeta.description}
+                    onChange={(e) => setFormMeta((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Explain what this form is for and anything people should know before submitting."
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground">Shown below the form title. Line breaks are preserved.</p>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
@@ -1299,6 +1314,9 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
               <div>
                 <h2 className="text-2xl font-semibold text-foreground">{formMeta.title || "Untitled Form"}</h2>
                 <p className="text-sm text-muted-foreground">/{formMeta.slug || "form-slug"}</p>
+                {formMeta.description.trim() ? (
+                  <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{formMeta.description.trim()}</p>
+                ) : null}
               </div>
 
               {previewPartners.length > 0 ? (

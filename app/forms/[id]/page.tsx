@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: PageProps) {
 
   return {
     title: form.title,
-    description: `Complete the public form for ${form.title}.`,
+    description: form.description?.trim() || `Complete the public form for ${form.title}.`,
   }
 }
 
@@ -59,8 +59,8 @@ export default async function PublicFormPage({ params }: PageProps) {
                 <Badge className="px-3 py-1 text-[11px] uppercase tracking-[0.2em]">Open Form</Badge>
                 <div className="space-y-3">
                   <h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{form.title}</h1>
-                  <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                    Review the details below, then fill in the required fields to send your response.
+                  <p className="max-w-2xl whitespace-pre-wrap break-words text-lg leading-8 text-muted-foreground">
+                    {form.description?.trim() || "Review the details below, then fill in the required fields to send your response."}
                   </p>
                 </div>
               </div>
