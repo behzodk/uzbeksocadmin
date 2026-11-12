@@ -1,3 +1,4 @@
+import { FormThemeFrame } from "@/components/forms/form-theme"
 import { FileText, Users } from "lucide-react"
 import { notFound } from "next/navigation"
 import { normalizeFormPartners } from "@/lib/form-partners"
@@ -43,7 +44,7 @@ export default async function PublicFormPage({ params }: PageProps) {
   const remainingResponses = form.max_response === null ? null : Math.max(form.max_response - form.response_count, 0)
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_40%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(255,255,255,1)_100%)]">
+    <FormThemeFrame theme={form.schema.theme}><div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_40%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(255,255,255,1)_100%)]">
       <header className="border-b border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur">
         <div className="mx-auto max-w-4xl px-6 py-5">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Public Form</p>
@@ -115,6 +116,6 @@ export default async function PublicFormPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </div></FormThemeFrame>
   )
 }

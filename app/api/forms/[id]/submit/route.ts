@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { z } from "zod"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
-import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
+import { getSortedFormFields, getVisibleFormFields, isAnswerableFormField } from "@/lib/form-schema"
 import { getPublicFormById, isPublicFormFull } from "@/lib/public-forms"
+import { validateFormField } from "@/lib/form-validation"
 import type { FormField } from "@/lib/types"
 
 export const runtime = "nodejs"
@@ -10,19 +11,6 @@ export const runtime = "nodejs"
 const submitFormSchema = z.object({
   answers: z.record(z.string(), z.unknown()),
 })
-
-function isFieldVisible(field: FormField, answers: Record<string, unknown>) {
-  if (!field.conditional) {
-    return true
-  }
-
-  const targetValue = answers[field.conditional.field_key]
-  if (typeof targetValue === "string") {
-    return targetValue.trim() === field.conditional.option
-  }
-
-  return String(targetValue ?? "") === field.conditional.option
-}
 
 function normalizeAnswerValue(field: FormField, value: unknown) {
   if (field.type === "multi_select") {
@@ -79,9 +67,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       return NextResponse.json({ error: "This form has reached its response limit." }, { status: 409 })
     }
 
-    const visibleAnswerableFields = getSortedFormFields(form)
+    const visibleAnswerableFields = getVisibleFormFields(getSortedFormFields(form), payload.answers)
       .filter(isAnswerableFormField)
-      .filter((field) => isFieldVisible(field, payload.answers))
+
+    // Validate original values before normalization can hide malformed input.
+    const errors: Record<string, string> = {}
+    for (const field of visibleAnswerableFields) {
+      const error = validateFormField(field, payload.answers[field.key])
+      if (error) errors[field.key] = error
+    }
+    if (Object.keys(errors).length > 0) {
+      return NextResponse.json({ error: "Please fix the highlighted fields and try again.", errors }, { status: 400 })
+    }
 
     const answers = Object.fromEntries(
       visibleAnswerableFields.map((field) => [field.key, normalizeAnswerValue(field, payload.answers[field.key])]),

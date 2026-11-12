@@ -187,6 +187,7 @@ export interface FormField {
 }
 
 export interface FormSchema {
+  theme?: "standard" | "game" | "new-year";
   fields: FormField[]
 }
 

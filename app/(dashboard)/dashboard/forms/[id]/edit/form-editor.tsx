@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { FormThemeFrame, type FormTheme } from "@/components/forms/form-theme"
 import { useRouter } from "next/navigation"
 import { FormPartnerLogoUploadField } from "@/components/forms/form-partner-logo-upload-field"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import { createEmptyFormPartner, MAX_FORM_PARTNERS, normalizeFormPartners } from "@/lib/form-partners"
+import { getVisibleFormFields } from "@/lib/form-schema"
 import { removeFormImage } from "@/lib/form-image-storage"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Form, FormField, FormFieldType, FormPartner, FormSchema } from "@/lib/types"
@@ -93,6 +95,7 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
 
 export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   const router = useRouter()
+  const [theme, setTheme] = useState<FormTheme>(form?.schema?.theme || "standard")
   const [activeTab, setActiveTab] = useState("edit")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -157,6 +160,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
 
   const currentSnapshot = useMemo(() => {
     return JSON.stringify({
+      theme,
       meta: {
         title: formMeta.title,
         description: formMeta.description,
@@ -197,7 +201,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         url: partner.url.trim(),
       })),
     })
-  }, [fields, formMeta.description, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title, partners])
+  }, [theme, fields, formMeta.description, formMeta.event_id, formMeta.is_active, formMeta.max_response, formMeta.slug, formMeta.title, partners])
 
   useEffect(() => {
     if (!initialSnapshotRef.current) {
@@ -255,19 +259,10 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       ),
     [fields],
   )
-  const visiblePreviewFields = useMemo(() => {
-    return fieldsPreview.filter((field) => {
-      if (!field.conditional) return true
-      const currentIndex = fields.findIndex((candidate) => candidate.id === field.id)
-      const parentIndex = fields.findIndex(
-        (candidate, candidateIndex) =>
-          candidateIndex < currentIndex && candidate.key === field.conditional?.field_key
-      )
-      if (parentIndex === -1) return false
-      const selectedValue = previewValues[field.conditional.field_key]
-      return selectedValue === field.conditional.option
-    })
-  }, [fields, fieldsPreview, previewValues])
+  const visiblePreviewFields = useMemo(
+    () => getVisibleFormFields(fieldsPreview, previewValues),
+    [fieldsPreview, previewValues],
+  )
 
   const handleAddField = () => {
     updateFields((prev) => [
@@ -534,7 +529,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       is_active: formMeta.is_active,
       max_response: formMeta.max_response === "" ? null : Number(formMeta.max_response),
       event_id: formMeta.event_id || null,
-      schema: { fields: cleanedFields } satisfies FormSchema,
+      schema: { fields: cleanedFields, theme } satisfies FormSchema,
       partners: cleanedPartners,
     }
 
@@ -634,6 +629,18 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                 <CardTitle>Form Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-medium">Form theme</legend>
+                  <p className="text-sm text-muted-foreground">Set the mood for your public registration page.</p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {([['standard', 'Standard', 'The familiar society look.'], ['game', 'Game Night', 'Warm paper, playful pieces, friendly competition.'], ['new-year', 'New Year', 'Midnight blue, champagne details, a fresh start.']] as const).map(([value, label, description]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${theme === value ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
+                      <input type="radio" name="form-theme" value={value} checked={theme === value} onChange={() => setTheme(value)} className="mr-2" />
+                      <span className="font-medium">{label}</span><p className="mt-2 text-xs text-muted-foreground">{description}</p>
+                    </label>)}
+                  </div>
+                  <FormThemeFrame theme={theme}><div className="p-6"><h1 className="text-3xl">{formMeta.title || 'Your next great gathering'}</h1></div></FormThemeFrame>
+                </fieldset>
+
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="form-title">Title</Label>

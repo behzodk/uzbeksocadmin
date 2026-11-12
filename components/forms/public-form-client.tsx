@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
+import { getSortedFormFields, getVisibleFormFields, isAnswerableFormField } from "@/lib/form-schema"
+import { validateFormField } from "@/lib/form-validation"
 import { uploadFormImage } from "@/lib/form-image-storage"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Form, FormField } from "@/lib/types"
@@ -21,8 +22,6 @@ type ImageSelection = {
   fileName: string
   previewUrl: string
 }
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function getFieldOptions(field: FormField) {
   return (field.options || []).map((option) => option.trim()).filter(Boolean)
@@ -43,131 +42,6 @@ function createInitialAnswers(form: Form): FormAnswers {
   })
 
   return initialAnswers
-}
-
-function isFieldVisible(field: FormField, answers: FormAnswers) {
-  if (!field.conditional) {
-    return true
-  }
-
-  const targetValue = answers[field.conditional.field_key]
-  if (typeof targetValue === "string") {
-    return targetValue.trim() === field.conditional.option
-  }
-
-  return String(targetValue ?? "") === field.conditional.option
-}
-
-function validateField(field: FormField, value: unknown, imageSelection?: ImageSelection | null) {
-  if (field.type === "content") {
-    return null
-  }
-
-  if (field.type === "image") {
-    if (field.required && !imageSelection?.file) {
-      return "Please choose an image."
-    }
-    return null
-  }
-
-  if (field.type === "multi_select") {
-    const selectedValues = Array.isArray(value) ? value : []
-
-    if (field.required && selectedValues.length === 0) {
-      return field.is_ranked ? "Please rank at least one option." : "Please choose at least one option."
-    }
-
-    if (field.min_count !== null && field.min_count !== undefined && selectedValues.length < field.min_count) {
-      return `Please choose at least ${field.min_count} option${field.min_count === 1 ? "" : "s"}.`
-    }
-
-    if (field.max_count !== null && field.max_count !== undefined && selectedValues.length > field.max_count) {
-      return `Please choose no more than ${field.max_count} option${field.max_count === 1 ? "" : "s"}.`
-    }
-
-    return null
-  }
-
-  if (field.type === "rating") {
-    const min = field.scale_min ?? 1
-    const max = field.scale_max ?? 5
-    const ratingValue = typeof value === "number" ? value : null
-
-    if (field.required && ratingValue === null) {
-      return "Please provide a rating."
-    }
-
-    if (ratingValue !== null && (ratingValue < min || ratingValue > max)) {
-      return `Please choose a value between ${min} and ${max}.`
-    }
-
-    if (ratingValue !== null && !field.allow_float && !Number.isInteger(ratingValue)) {
-      return "Please choose a whole number."
-    }
-
-    return null
-  }
-
-  if (field.type === "boolean") {
-    if (field.required && value !== true) {
-      return "This checkbox is required."
-    }
-
-    return null
-  }
-
-  if (field.type === "select") {
-    const selectedValue = typeof value === "string" ? value.trim() : ""
-    const options = getFieldOptions(field)
-
-    if (field.required && !selectedValue) {
-      return "Please select an option."
-    }
-
-    if (selectedValue && options.length > 0 && !options.includes(selectedValue)) {
-      return "Please select a valid option."
-    }
-
-    return null
-  }
-
-  const textValue = typeof value === "string" ? value.trim() : ""
-
-  if (field.type === "email") {
-    if (field.required && !textValue) {
-      return "Email is required."
-    }
-
-    if (!textValue) {
-      return null
-    }
-
-    if (field.is_student_email) {
-      if (textValue.includes("@")) {
-        return "Enter your university username only."
-      }
-
-      return null
-    }
-
-    if (!EMAIL_PATTERN.test(textValue)) {
-      return "Please enter a valid email address."
-    }
-  }
-
-  if (field.required && !textValue) {
-    return "This field is required."
-  }
-
-  if (field.min_count !== null && field.min_count !== undefined && textValue.length < field.min_count) {
-    return `Please enter at least ${field.min_count} characters.`
-  }
-
-  if (field.max_count !== null && field.max_count !== undefined && textValue.length > field.max_count) {
-    return `Please enter no more than ${field.max_count} characters.`
-  }
-
-  return null
 }
 
 export function PublicFormClient({ form }: { form: Form }) {
@@ -198,7 +72,7 @@ export function PublicFormClient({ form }: { form: Form }) {
     }
   }, [imageSelections])
 
-  const visibleFields = useMemo(() => fields.filter((field) => isFieldVisible(field, answers)), [answers, fields])
+  const visibleFields = useMemo(() => getVisibleFormFields(fields, answers), [answers, fields])
 
   const updateAnswer = (key: string, value: unknown) => {
     setAnswers((previous) => ({ ...previous, [key]: value }))
@@ -255,7 +129,10 @@ export function PublicFormClient({ form }: { form: Form }) {
     const nextErrors: Record<string, string> = {}
 
     answerableVisibleFields.forEach((field) => {
-      const validationError = validateField(field, answers[field.key], imageSelections[field.key])
+      const validationError = validateFormField(field, answers[field.key], {
+        studentEmailMode: "username",
+        hasSelectedImage: Boolean(imageSelections[field.key]?.file),
+      })
       if (validationError) {
         nextErrors[field.key] = validationError
       }
@@ -335,9 +212,10 @@ export function PublicFormClient({ form }: { form: Form }) {
         body: JSON.stringify({ answers: payload }),
       })
 
-      const result = (await response.json().catch(() => null)) as { error?: string } | null
+      const result = (await response.json().catch(() => null)) as { error?: string; errors?: Record<string, string> } | null
 
       if (!response.ok) {
+        if (result?.errors) setErrors(result.errors)
         throw new Error(result?.error || "Unable to submit the form.")
       }
 
