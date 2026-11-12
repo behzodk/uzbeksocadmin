@@ -1,13 +1,16 @@
 "use client"
 
+import { isIllustratedFormTheme } from "@/components/forms/themed-form-parts"
+
 import { useEffect, useMemo, useRef, useState } from "react"
+import { PublicFormClient } from "@/components/forms/public-form-client"
+import { ThemedFormHeader } from "@/components/forms/themed-form-parts"
 import { FormThemeFrame, type FormTheme } from "@/components/forms/form-theme"
 import { useRouter } from "next/navigation"
 import { FormPartnerLogoUploadField } from "@/components/forms/form-partner-logo-upload-field"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { RichTextEditor } from "@/components/editor/rich-text-editor"
 import { createEmptyFormPartner, MAX_FORM_PARTNERS, normalizeFormPartners } from "@/lib/form-partners"
-import { getVisibleFormFields } from "@/lib/form-schema"
 import { removeFormImage } from "@/lib/form-image-storage"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
 import type { Form, FormField, FormFieldType, FormPartner, FormSchema } from "@/lib/types"
@@ -20,7 +23,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Globe, Plus, Star, Trash2 } from "lucide-react"
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, Edit3, Plus, Trash2 } from "lucide-react"
 
 interface EventOption {
   id: string
@@ -96,6 +99,7 @@ const normalizeSchema = (schema: FormSchema | null | undefined): FormSchema => {
 export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
   const router = useRouter()
   const [theme, setTheme] = useState<FormTheme>(form?.schema?.theme || "standard")
+  const [previewSize, setPreviewSize] = useState<"desktop" | "mobile">("desktop")
   const [activeTab, setActiveTab] = useState("edit")
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -112,7 +116,6 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
 
   const [fields, setFields] = useState<FormField[]>(() => normalizeSchema(form?.schema).fields)
   const [partners, setPartners] = useState<FormPartner[]>(() => normalizeFormPartners(form?.partners))
-  const [previewValues, setPreviewValues] = useState<Record<string, string | boolean | string[] | number>>({})
 
   const trimOptions = (options?: string[]) => (options || []).map((opt) => opt.trim()).filter(Boolean)
 
@@ -259,11 +262,6 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
       ),
     [fields],
   )
-  const visiblePreviewFields = useMemo(
-    () => getVisibleFormFields(fieldsPreview, previewValues),
-    [fieldsPreview, previewValues],
-  )
-
   const handleAddField = () => {
     updateFields((prev) => [
       ...prev,
@@ -281,22 +279,6 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         options: [],
       },
     ])
-  }
-
-  const handlePreviewSelectChange = (key: string, value: string) => {
-    setPreviewValues((prev) => {
-      const next = { ...prev, [key]: value }
-      fields.forEach((field) => {
-        if (field.conditional?.field_key === key && field.conditional.option !== value) {
-          delete next[field.key]
-        }
-      })
-      return next
-    })
-  }
-
-  const handlePreviewRatingChange = (key: string, value: number) => {
-    setPreviewValues((prev) => ({ ...prev, [key]: value }))
   }
 
   const handleUpdateField = (index: number, updates: Partial<FormField>) => {
@@ -632,25 +614,13 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                 <fieldset className="space-y-3">
                   <legend className="text-sm font-medium">Form theme</legend>
                   <p className="text-sm text-muted-foreground">Set the mood for your public registration page.</p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {([['standard', 'Standard', 'The familiar society look.'], ['game', 'Game Night', 'Tabletop scorecard. Ink blue, red accents, numbered questions.'], ['new-year', 'New Year', 'Midnight blue, champagne details, a fresh start.']] as const).map(([value, label, description]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${theme === value ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {([['standard', 'Standard', 'The familiar society look.'], ['game', 'Game Night', 'Illustrated game pieces, playful type, and a clear registration form.'], ['movie', 'Movie Night', 'Cinema tickets, illustrated popcorn, and a clear registration form.'], ['new-year', 'New Year', 'Midnight blue, champagne details, a fresh start.']] as const).map(([value, label, description]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${theme === value ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
                       <input type="radio" name="form-theme" value={value} checked={theme === value} onChange={() => setTheme(value)} className="mr-2" />
                       <span className="font-medium">{label}</span><p className="mt-2 text-xs text-muted-foreground">{description}</p>
                     </label>)}
                   </div>
-                  <FormThemeFrame theme={theme}>
-                    <section className="form-heading relative p-6">
-                      <span className="neo-badge">{theme === "game" ? "GAME NIGHT / SIGN-UP SHEET" : "Registration"}</span>
-                      <h1 className="text-3xl">{formMeta.title || 'Your next great gathering'}</h1>
-                      <p className="mt-2 text-sm">{formMeta.description || 'Fill in your details to join us.'}</p>
-                    </section>
-                    <form onSubmit={(event) => event.preventDefault()} aria-label="Theme preview" className="p-6 space-y-4">
-                      <div className="game-question space-y-3"><label htmlFor="theme-preview-name">Your name</label><Input id="theme-preview-name" placeholder="Full name" readOnly tabIndex={-1} /></div>
-                      <div className="game-question space-y-3"><label htmlFor="theme-preview-email">Email address</label><Input id="theme-preview-email" placeholder="you@example.com" readOnly tabIndex={-1} /></div>
-                      <p>Preview only. Your saved fields appear on the public form.</p>
-                      <Button type="submit">Submit registration</Button>
-                    </form>
-                  </FormThemeFrame>
+                  <Button type="button" variant="outline" onClick={() => setActiveTab("preview")}>Preview your form with this theme</Button>
                 </fieldset>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1325,177 +1295,23 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
             </Card>
           </div>
         ) : (
-          <Card className="max-w-3xl mx-auto">
-            <CardHeader>
-              <CardTitle>Preview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h2 className="text-2xl font-semibold text-foreground">{formMeta.title || "Untitled Form"}</h2>
-                <p className="text-sm text-muted-foreground">/{formMeta.slug || "form-slug"}</p>
-                {formMeta.description.trim() ? (
-                  <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">{formMeta.description.trim()}</p>
-                ) : null}
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-muted-foreground">Preview only. Responses and images are never saved.</p>
+              <div className="flex gap-2" role="group" aria-label="Preview width">
+                <Button type="button" variant={previewSize === "desktop" ? "default" : "outline"} aria-pressed={previewSize === "desktop"} onClick={() => setPreviewSize("desktop")}>Desktop</Button>
+                <Button type="button" variant={previewSize === "mobile" ? "default" : "outline"} aria-pressed={previewSize === "mobile"} onClick={() => setPreviewSize("mobile")}>Mobile</Button>
               </div>
-
-              {previewPartners.length > 0 ? (
-                <div className="rounded-2xl border border-border bg-muted/20 p-4">
-                  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    <Globe className="h-4 w-4" />
-                    Featured Partners
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    {previewPartners.map((partner) => (
-                      <a
-                        key={partner.id}
-                        href={partner.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-4 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40"
-                      >
-                        <div className="flex h-14 w-20 shrink-0 items-center justify-center rounded-lg bg-muted/40 p-2">
-                          <img src={partner.logo_url} alt={partner.name} className="max-h-full max-w-full object-contain" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground">{partner.name}</p>
-                          <p className="truncate text-xs text-muted-foreground">{partner.url}</p>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              <div className="space-y-4">
-                {fieldsPreview.length === 0 ? (
-                  <div className="border border-dashed rounded-lg p-6 text-center text-sm text-muted-foreground">
-                    Add fields to see a preview.
-                  </div>
-                ) : (
-                  visiblePreviewFields.map((field) => {
-                    const previewOptions = trimOptions(field.options)
-                    const selectValue = typeof previewValues[field.key] === "string" ? (previewValues[field.key] as string) : undefined
-                    const ratingValue =
-                      typeof previewValues[field.key] === "number" ? (previewValues[field.key] as number) : undefined
-                    const ratingMin = Number.isFinite(field.scale_min) ? (field.scale_min as number) : 1
-                    const ratingMax = Number.isFinite(field.scale_max) ? (field.scale_max as number) : 5
-                    const ratingStep = field.allow_float ? 0.1 : 1
-                    return (
-                      <div key={field.id} className="space-y-2">
-                        {field.type !== "content" && (
-                          <Label className="flex items-center gap-2">
-                            {field.label}
-                            {field.required && <span className="text-xs text-destructive">*</span>}
-                          </Label>
-                        )}
-                        {field.type === "text" && <Input placeholder={field.label} />}
-                        {field.type === "email" && <Input type="email" placeholder="name@example.com" />}
-                        {field.type === "select" &&
-                          (field.use_radio_buttons ? (
-                            <div className="space-y-2">
-                              {previewOptions.map((option) => (
-                                <label key={option} className="flex items-center gap-2 text-sm">
-                                  <input type="radio" name={`preview-${field.key}`} className="h-4 w-4" disabled />
-                                  {option}
-                                </label>
-                              ))}
-                            </div>
-                          ) : (
-                            <Select value={selectValue} onValueChange={(value) => handlePreviewSelectChange(field.key, value)}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select an option" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {previewOptions.map((option) => (
-                                  <SelectItem key={option} value={option}>
-                                    {option}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          ))}
-                        {field.type === "multi_select" && (
-                          <div className="space-y-2">
-                            {previewOptions.map((option) => (
-                              <label key={option} className="flex items-center gap-2 text-sm">
-                                <input type="checkbox" className="h-4 w-4 rounded border-muted" disabled />
-                                {option}
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                        {field.type === "rating" && (
-                          <div className="space-y-2">
-                            {field.scale_type === "stars" ? (
-                              <div className="flex items-center gap-1">
-                                {Array.from({ length: Math.max(1, Math.min(15, ratingMax - ratingMin + 1)) }).map((_, starIndex) => {
-                                  const value = ratingMin + starIndex
-                                  const filled = (ratingValue ?? 0) >= value
-                                  return (
-                                    <Star
-                                      key={value}
-                                      className={`h-5 w-5 ${filled ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`}
-                                    />
-                                  )
-                                })}
-                              </div>
-                            ) : (
-                              <Input
-                                type="number"
-                                step={ratingStep}
-                                min={ratingMin}
-                                max={ratingMax}
-                                value={ratingValue ?? ""}
-                                placeholder={`${ratingMin} – ${ratingMax}`}
-                                onChange={(e) => {
-                                  const next = e.target.value === "" ? undefined : Number(e.target.value)
-                                  if (next === undefined || Number.isFinite(next)) handlePreviewRatingChange(field.key, next ?? ratingMin)
-                                }}
-                              />
-                            )}
-                            {(field.min_label || field.max_label) && (
-                              <div className="flex justify-between text-xs text-muted-foreground">
-                                <span>{field.min_label}</span>
-                                <span>{field.max_label}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {field.type === "image" && (
-                          <div className="space-y-2">
-                            <Input type="file" accept="image/*" />
-                            <p className="text-xs text-muted-foreground">
-                              The live form should upload this image to Supabase Storage before saving the response.
-                            </p>
-                          </div>
-                        )}
-                        {field.type === "content" && (
-                          <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
-                            {field.label?.trim() ? (
-                              <p className="text-base font-semibold text-foreground">{field.label}</p>
-                            ) : null}
-                            {field.content_html?.trim() ? (
-                              <ContentPreview content={field.content_html} />
-                            ) : (
-                              <p className="text-sm text-muted-foreground">
-                                Add some text block content to preview instructions here.
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {field.type === "boolean" && (
-                          <div className="flex items-center gap-2">
-                            <Switch checked={false} />
-                            <span className="text-sm text-muted-foreground">Toggle</span>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="game-preview" data-size={previewSize}>
+              <FormThemeFrame theme={theme}>
+                {isIllustratedFormTheme(theme) ? <ThemedFormHeader theme={theme} title={formMeta.title || "Untitled form"} description={formMeta.description}>
+                  {previewPartners.length > 0 && <div className="game-partners"><span>With</span>{previewPartners.map(partner => <span key={partner.id}>{partner.name}</span>)}</div>}
+                </ThemedFormHeader> : <div className="p-6"><h1 className="text-3xl font-semibold">{formMeta.title || "Untitled form"}</h1><p className="mt-3 whitespace-pre-wrap">{formMeta.description}</p></div>}
+                <PublicFormClient key={theme} preview form={{ id: form?.id || "preview", title: formMeta.title, description: formMeta.description, slug: formMeta.slug, is_active: formMeta.is_active, max_response: null, schema: { fields: fieldsPreview.map((field, index) => ({ ...field, order: index + 1 })), theme }, partners: previewPartners, event_id: null, created_at: form?.created_at || "" }} />
+              </FormThemeFrame>
+            </div>
+          </div>
         )}
       </div>
     </div >

@@ -1,51 +1,647 @@
-/* Game Night: a tabletop score sheet, with a restrained two-ink palette. */
-.form-theme[data-form-theme="game"] {
-  --background: 0 0% 100%; --foreground: 229 48% 21%;
-  --card: 0 0% 100%; --card-foreground: 229 48% 21%;
-  --muted: 225 23% 95%; --muted-foreground: 228 13% 39%;
-  --primary: 230 51% 30%; --primary-foreground: 0 0% 100%;
-  --secondary: 225 30% 94%; --secondary-foreground: 229 48% 21%;
-  --border: 226 22% 78%; --input: 226 22% 78%; --ring: 230 51% 30%;
-  --accent: 225 30% 94%; --accent-foreground: 229 48% 21%;
-  position:relative;isolation:isolate;min-height:80vh;padding:24px 16px 56px;
-  background-color:#e8eaf0;background-image:radial-gradient(#24366a19 .8px,transparent .8px);background-size:12px 12px;
-  color:#1c2852;font-family:Arial,Helvetica,sans-serif;
+@font-face {
+  font-family: "Game Display";
+  src: url("/fonts/bricolage-grotesque-bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
 }
-[data-form-theme="game"] .theme-content{position:relative;max-width:704px;margin:auto}
-[data-form-theme="game"] .theme-margin-art{display:none}
-[data-form-theme="game"] .form-heading{background:#fff;border:1px solid #bdc4d6;border-radius:4px 4px 0 0;border-top:8px solid #26396e;padding:22px 28px;margin:0;overflow:visible}
-[data-form-theme="game"] .form-heading:after{content:"";position:absolute;inset:0 0 auto auto;width:72px;height:8px;background:repeating-linear-gradient(90deg,#c84236 0 9px,#fff 9px 18px)}
-[data-form-theme="game"] .form-heading .uzbek-pattern{display:none}
-[data-form-theme="game"] .form-heading .container{padding:0}
-[data-form-theme="game"] .form-heading .grid{display:flex;flex-direction:column;align-items:stretch;gap:12px}
-[data-form-theme="game"] .form-heading .neo-badge{display:inline-block;background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 8px;color:#b5362b;font:700 11px/1.4 monospace;letter-spacing:.13em}
-[data-form-theme="game"] h1{font-family:Arial,Helvetica,sans-serif;font-size:36px;line-height:1.08;letter-spacing:-.04em;font-weight:800;color:#1c2852;margin:0 0 10px}
-[data-form-theme="game"] .form-heading p{font:400 15px/1.55 Arial,Helvetica,sans-serif;color:#505a73}
-[data-form-theme="game"] .form-body{padding:0;background:transparent}
-[data-form-theme="game"] .form-body>.container{padding:0;max-width:none}
-[data-form-theme="game"] .form-body details{margin-top:12px;background:#fff;color:#1c2852;box-shadow:none;border:1px solid #bdc4d6}
-[data-form-theme="game"] form{counter-reset:question;margin:0!important;padding:0 28px 24px;background:#fff;color:#1c2852;border:1px solid #bdc4d6;border-top:0;border-radius:0 0 4px 4px;box-shadow:0 5px 0 #d5d9e3;}
-[data-form-theme="game"] form>.game-question{counter-increment:question;position:relative;padding:22px 0 22px 42px;margin:0!important;border-bottom:1px solid #e1e4ed}
-[data-form-theme="game"] .game-question:before{content:counter(question,decimal-leading-zero);position:absolute;left:0;top:23px;color:#8a93ab;font:500 12px/20px monospace}
-[data-form-theme="game"] .game-question:focus-within:before{color:#b5362b;font-weight:700}
-[data-form-theme="game"] .game-question label,[data-form-theme="game"] .game-question .font-display{font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.4;letter-spacing:0;font-weight:600}
-[data-form-theme="game"] .font-body{font-family:Arial,Helvetica,sans-serif}
-[data-form-theme="game"] input:not([type="checkbox"]):not([type="radio"]),[data-form-theme="game"] textarea,[data-form-theme="game"] select,[data-form-theme="game"] button[role="combobox"]{background:#fafbfe;color:#1c2852;border:1px solid #aab4ce;border-radius:3px;box-shadow:none;font:400 16px/1.5 Arial,Helvetica,sans-serif;min-height:44px;padding:10px 12px;}
-[data-form-theme="game"] input::placeholder,[data-form-theme="game"] textarea::placeholder{color:#788198}
-[data-form-theme="game"] input:focus-visible,[data-form-theme="game"] textarea:focus-visible,[data-form-theme="game"] button:focus-visible{outline:2px solid #26396e;outline-offset:3px}
-[data-form-theme="game"] .game-question .neo-card,[data-form-theme="game"] .game-question label:has(input[type="checkbox"]),[data-form-theme="game"] .game-question label:has(button[role="checkbox"]),[data-form-theme="game"] .game-question label:has(button[role="radio"]){border:1px solid #c2c9db;border-radius:3px;box-shadow:none;background:#fff;transform:none;transition:background-color .15s,border-color .15s}
-[data-form-theme="game"] .game-question label:has(:checked),[data-form-theme="game"] .game-question label:has([data-state="checked"]){background:#edf0f9;border-color:#26396e}
-[data-form-theme="game"] input[type="checkbox"],[data-form-theme="game"] input[type="radio"]{accent-color:#26396e}
-[data-form-theme="game"] form>p{font-size:12px;line-height:1.6;color:#626c83;margin-top:20px}
-[data-form-theme="game"] button[type="submit"]{background:#26396e;color:white;border:1px solid #26396e;border-radius:3px;box-shadow:0 3px 0 #121d42;min-height:46px;padding:10px 24px;font:600 14px/1.5 Arial,Helvetica,sans-serif;transition:background-color .15s,translate .15s}
-[data-form-theme="game"] button[type="submit"]:hover{background:#1c2b58;transform:none}
-[data-form-theme="game"] button[type="submit"]:active{translate:0 2px;box-shadow:none}
-[data-form-theme="game"] button:disabled{opacity:.55}
-[data-form-theme="game"] .theme-content>div{background:transparent}
-[data-form-theme="game"] .theme-content>div>header{display:none}
-[data-form-theme="game"] main{padding:0;max-width:none}
-[data-form-theme="game"] main>div{background:#fff;border:1px solid #bdc4d6;border-top:8px solid #26396e;border-radius:4px;box-shadow:none}
-[data-form-theme="game"] main>div>div{padding:24px}
-[data-form-theme="game"] main form{padding:0;border:0;box-shadow:none}
-@media(max-width:600px){.form-theme[data-form-theme="game"]{padding:12px 10px 32px}[data-form-theme="game"] .form-heading{padding:20px}[data-form-theme="game"] h1{font-size:29px}[data-form-theme="game"] form{padding:0 20px 24px}[data-form-theme="game"] form>.game-question{padding-left:30px}[data-form-theme="game"] .game-question:before{font-size:10px}}
-@media(prefers-reduced-motion:reduce){[data-form-theme="game"] *{transition:none!important;animation:none!important}}
+/* Game Night: one visual system for the illustrations, form, and response states. */
+.form-theme:is([data-form-theme="game"], [data-form-theme="movie"]) {
+  --game-ink: #262622;
+  --game-blue: #3158cf;
+  --game-red: #cf392b;
+  --game-paper: #fffefb;
+  --game-line: #d9d9d1;
+  --background: 60 17% 98%;
+  --foreground: 60 5% 14%;
+  --card: 45 100% 99%;
+  --card-foreground: 60 5% 14%;
+  --muted: 60 12% 94%;
+  --muted-foreground: 60 3% 38%;
+  --primary: 225 62% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 225 60% 96%;
+  --secondary-foreground: 60 5% 14%;
+  --border: 60 10% 82%;
+  --input: 60 10% 75%;
+  --ring: 225 62% 50%;
+  --accent: 225 60% 96%;
+  --accent-foreground: 60 5% 14%;
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  min-height: 75vh;
+  padding: 28px 20px 64px;
+  background: #f0f0e9;
+  color: var(--game-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .theme-content {
+  position: relative;
+  z-index: 1;
+  max-width: 680px;
+  margin: auto;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-heading {
+  position: relative;
+  background: var(--game-paper);
+  border: 1px solid var(--game-line);
+  border-top: 5px solid var(--game-blue);
+  border-radius: 14px 14px 0 0;
+  padding: 25px 32px 22px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-heading-copy {
+  min-width: 0;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--game-blue);
+  font:
+    700 10px/1.5 Arial,
+    Helvetica,
+    sans-serif;
+  letter-spacing: 0.12em;
+  margin: 0 0 10px;
+}
+.game-mini-pips {
+  display: inline-flex;
+  gap: 3px;
+}
+.game-mini-pips i {
+  width: 4px;
+  height: 4px;
+  background: currentColor;
+  border-radius: 50%;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) h1 {
+  font-family: "Game Display", Arial, Helvetica, sans-serif;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1.07;
+  letter-spacing: -0.025em;
+  color: var(--game-ink);
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-description {
+  font:
+    400 15px/1.6 Arial,
+    Helvetica,
+    sans-serif;
+  color: #60605a;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+  max-width: 55ch;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .form-body {
+  padding: 0;
+  background: transparent;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .form-body > .container {
+  padding: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .form-body details {
+  margin: 0;
+  padding: 14px 32px;
+  background: var(--game-paper);
+  border: 1px solid var(--game-line);
+  border-top: 0;
+  border-radius: 0;
+  font-size: 13px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .form-body summary {
+  color: var(--game-blue);
+  font-weight: 600;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) form {
+  margin: 0 !important;
+  padding: 0 32px 28px;
+  background: var(--game-paper);
+  color: var(--game-ink);
+  border: 1px solid var(--game-line);
+  border-top: 0;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 4px 0 #26262208;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) form > .game-question {
+  position: relative;
+  padding: 23px 0;
+  margin: 0 !important;
+  border-top: 1px solid #e5e5dd;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question:before {
+  content: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question > div:first-child > label,
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question > div:first-child > span,
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question .font-display {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  letter-spacing: 0;
+  font-weight: 600;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .font-body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input:where(:not([type="checkbox"]):not([type="radio"]):not([type="range"])),
+:is([data-form-theme="game"], [data-form-theme="movie"]) textarea,
+:is([data-form-theme="game"], [data-form-theme="movie"]) select,
+:is([data-form-theme="game"], [data-form-theme="movie"]) button[role="combobox"] {
+  background: #fff;
+  color: var(--game-ink);
+  border: 1px solid #bdbfb6;
+  border-radius: 7px;
+  box-shadow: none;
+  font:
+    400 16px/1.5 Arial,
+    Helvetica,
+    sans-serif;
+  min-height: 46px;
+  padding: 10px 12px;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input::placeholder,
+:is([data-form-theme="game"], [data-form-theme="movie"]) textarea::placeholder {
+  color: #86877e;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input:focus-visible,
+:is([data-form-theme="game"], [data-form-theme="movie"]) textarea:focus-visible,
+:is([data-form-theme="game"], [data-form-theme="movie"]) button:focus-visible,
+:is([data-form-theme="game"], [data-form-theme="movie"]) a:focus-visible,
+:is([data-form-theme="game"], [data-form-theme="movie"]) summary:focus-visible {
+  outline: 2px solid var(--game-blue);
+  outline-offset: 3px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question .neo-card,
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question label:has(:where(input[type="checkbox"])),
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question label:has(:where(button[role="checkbox"])),
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question label:has(:where(button[role="radio"])) {
+  border: 1px solid #cecec4;
+  border-radius: 9px;
+  box-shadow: 0 2px 0 #26262205;
+  background: #fff;
+  transform: none;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+  min-height: 48px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question label:has(:checked),
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question label:has([data-state="checked"]) {
+  background: #f0f3ff;
+  border-color: var(--game-blue);
+  box-shadow: inset 0 0 0 1px var(--game-blue);
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input[type="checkbox"],
+:is([data-form-theme="game"], [data-form-theme="movie"]) input[type="radio"] {
+  accent-color: var(--game-blue);
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) [role="radio"],
+:is([data-form-theme="game"], [data-form-theme="movie"]) [role="checkbox"] {
+  border-color: #7a7d72;
+  color: var(--game-blue);
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) [role="checkbox"][data-state="checked"] {
+  background: var(--game-blue);
+  border-color: var(--game-blue);
+  color: white;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .text-destructive {
+  color: #b52b24;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question[data-invalid="true"] input,
+:is([data-form-theme="game"], [data-form-theme="movie"]) [aria-invalid="true"] {
+  border-color: #b52b24;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question[data-invalid="true"]:before {
+  content: "";
+  position: absolute;
+  left: -13px;
+  top: 22px;
+  bottom: 22px;
+  width: 2px;
+  background: #b52b24;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-student-email {
+  border: 1px solid #bdbfb6;
+  border-radius: 7px;
+  box-shadow: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-student-email input {
+  border: 0;
+  min-width: 40px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-student-email > div {
+  background: #f3f3ee;
+  border-left: 1px solid #d9d9d1;
+  font-size: 13px;
+  padding-inline: 10px;
+  color: #60605a;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) form > p {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #60605a;
+  margin: 18px 0;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) button[type="submit"],
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-primary-action {
+  background: var(--game-blue);
+  color: white;
+  border: 1px solid var(--game-blue);
+  border-radius: 8px;
+  box-shadow: 0 3px 0 #19378e;
+  min-height: 46px;
+  padding: 10px 22px;
+  font:
+    600 14px/1.5 Arial,
+    Helvetica,
+    sans-serif;
+  transition:
+    background-color 0.15s,
+    translate 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) button[type="submit"]:hover,
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-primary-action:hover {
+  background: #2448b7;
+  transform: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) button[type="submit"]:active {
+  translate: 0 2px;
+  box-shadow: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) button:disabled {
+  opacity: 0.55;
+}
+.game-table-pieces {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.game-piece {
+  display: block;
+  width: 140px;
+  height: 150px;
+  overflow: visible;
+  filter: drop-shadow(0 3px 0 #26262212);
+  pointer-events: none;
+}
+.game-table-pieces > .game-piece {
+  position: absolute;
+  animation: game-piece-settle 0.45s ease-out both;
+}
+.game-cards {
+  top: 80px;
+  left: calc(50% - 505px);
+  rotate: -7deg;
+}
+.game-dice {
+  top: 145px;
+  right: calc(50% - 508px);
+  rotate: 9deg;
+}
+.game-pawn {
+  top: 490px;
+  left: calc(50% - 486px);
+  width: 110px;
+  rotate: -8deg;
+}
+.game-mobile-piece {
+  display: none;
+}
+.game-partners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e5e5dd;
+}
+.game-partners > span {
+  font-size: 10px;
+  color: #60605a;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.game-partners a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #4b4c45;
+  font-size: 12px;
+  text-decoration: none;
+}
+.game-partners img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-status {
+  background: var(--game-paper);
+  border: 1px solid var(--game-line);
+  border-top: 5px solid var(--game-blue);
+  border-radius: 14px;
+  padding: 32px;
+  text-align: center;
+}
+.game-status > .game-piece {
+  width: 80px;
+  height: 86px;
+  margin: 0 auto 18px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-status .game-eyebrow {
+  justify-content: center;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-status h1 {
+  font-size: 32px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-status > p:not(.game-eyebrow) {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #60605a;
+  max-width: 44ch;
+  margin: 0 auto 24px;
+}
+.game-status-success > .game-piece {
+  animation: game-piece-settle 0.45s ease-out both;
+}
+.game-preview {
+  container-type: inline-size;
+  max-width: 100%;
+  margin-inline: auto;
+  transition: max-width 0.2s;
+}
+.game-preview[data-size="mobile"] {
+  max-width: 390px;
+}
+@container (max-width:900px) {
+  .game-table-pieces {
+    display: none;
+  }
+  .game-mobile-piece {
+    display: block;
+    position: absolute;
+    right: 20px;
+    top: 22px;
+    width: 72px;
+    height: 77px;
+  }
+  .game-heading h1,
+  .game-heading .game-eyebrow {
+    padding-right: 78px;
+  }
+}
+@media (max-width: 600px) {
+  .form-theme:is([data-form-theme="game"], [data-form-theme="movie"]) {
+    padding: 16px 12px 40px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-heading {
+    padding: 20px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) h1 {
+    font-size: 31px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-description {
+    font-size: 14px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) form {
+    padding: 0 20px 24px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) form > .game-question {
+    padding-block: 20px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.075em;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .form-body details {
+    padding-inline: 20px;
+  }
+  .game-mobile-piece {
+    width: 62px;
+    height: 67px;
+    right: 15px;
+    top: 22px;
+  }
+  .game-heading h1,
+  .game-heading .game-eyebrow {
+    padding-right: 62px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-status {
+    padding: 28px 20px;
+  }
+}
+@keyframes game-piece-settle {
+  from {
+    opacity: 0;
+    translate: 0 -7px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  :is([data-form-theme="game"], [data-form-theme="movie"]) *,
+  :is([data-form-theme="game"], [data-form-theme="movie"]) *:before {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Choice cards echo the proportions and ink of the illustrated playing cards. */
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid > label {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  min-height: 104px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid > label:after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #d0d2c9;
+  box-shadow: 0 8px 0 #d0d2c9;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid > label:has([data-state="checked"]):after {
+  background: var(--game-blue);
+  box-shadow: 0 8px 0 var(--game-blue);
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) button[type="submit"] {
+  text-transform: none;
+  letter-spacing: 0;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) form > .game-submit-row {
+  margin-top: 22px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-preview-note {
+  color: #60605a;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 12px 0;
+}
+@container (max-width:500px) {
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid {
+    grid-template-columns: 1fr;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-choice-grid > label {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+    min-height: 52px;
+    gap: 12px;
+    padding-right: 28px;
+  }
+}
+
+:is([data-form-theme="game"], [data-form-theme="movie"]) form.neo-card:hover {
+  transform: none;
+  box-shadow: 0 4px 0 #26262208;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-primary-action {
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Tailwind 4 consumes complete colours; the Vite app uses HSL channels. */
+.form-theme:is([data-form-theme="game"], [data-form-theme="movie"]) {
+  --background: #fff;
+  --foreground: #262622;
+  --card: #fffefb;
+  --card-foreground: #262622;
+  --muted: #f3f3ee;
+  --muted-foreground: #60605a;
+  --primary: #3158cf;
+  --primary-foreground: #fff;
+  --secondary: #f0f3ff;
+  --secondary-foreground: #262622;
+  --border: #d9d9d1;
+  --input: #bdbfb6;
+  --ring: #3158cf;
+  --accent: #f0f3ff;
+  --accent-foreground: #262622;
+}
+
+@container (max-width:600px) {
+  .form-theme:is([data-form-theme="game"], [data-form-theme="movie"]) {
+    padding: 16px 12px 40px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-heading {
+    padding: 20px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) h1 {
+    font-size: 31px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-description {
+    font-size: 14px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) form {
+    padding: 0 20px 24px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) form > .game-question {
+    padding-block: 20px;
+  }
+  :is([data-form-theme="game"], [data-form-theme="movie"]) .game-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.075em;
+  }
+  .game-mobile-piece {
+    width: 62px;
+    height: 67px;
+    right: 15px;
+    top: 22px;
+  }
+  .game-heading h1,
+  .game-heading .game-eyebrow {
+    padding-right: 62px;
+  }
+}
+
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-content-block {
+  background: #f3f4ef;
+  border: 1px solid #d9d9d1;
+  border-radius: 9px;
+  box-shadow: none;
+  padding: 18px;
+  margin-block: 16px;
+  transform: none;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-content-block h2 {
+  font:
+    600 17px/1.4 Arial,
+    Helvetica,
+    sans-serif;
+  margin-bottom: 10px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-content-block .form-rich-content {
+  font:
+    400 14px/1.6 Arial,
+    Helvetica,
+    sans-serif;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) .game-question button[aria-label^="Rate"] {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #c7c8be;
+  border-radius: 7px;
+  box-shadow: none;
+  transform: none;
+  color: #3158cf;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input[type="range"] {
+  accent-color: var(--game-blue);
+  min-height: 44px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input[type="file"] {
+  max-width: 100%;
+  font-size: 13px;
+}
+:is([data-form-theme="game"], [data-form-theme="movie"]) input[type="file"]::file-selector-button {
+  background: #f0f3ff;
+  color: #3158cf;
+  border: 0;
+  border-radius: 4px;
+  padding: 7px 9px;
+  font:
+    600 12px Arial,
+    Helvetica,
+    sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-right: 8px;
+}

@@ -1,3 +1,5 @@
+import { isIllustratedFormTheme } from "@/components/forms/themed-form-parts";
+import { ThemedFormHeader, ThemedStatusCard } from "@/components/forms/themed-form-parts"
 import { FormThemeFrame } from "@/components/forms/form-theme"
 import { FileText, Users } from "lucide-react"
 import { notFound } from "next/navigation"
@@ -42,6 +44,15 @@ export default async function PublicFormPage({ params }: PageProps) {
   const partners = normalizeFormPartners(form.partners)
   const isFull = isPublicFormFull(form)
   const remainingResponses = form.max_response === null ? null : Math.max(form.max_response - form.response_count, 0)
+
+  if (isIllustratedFormTheme(form.schema.theme)) return <FormThemeFrame theme={form.schema.theme}>
+    {!form.is_active || isFull ? <ThemedStatusCard theme={form.schema.theme} status={!form.is_active ? "closed" : "full"} title={form.title} /> : <>
+      <ThemedFormHeader theme={form.schema.theme} title={form.title} description={form.description?.trim() || "Fill in your details below to register."}>
+        {partners.length > 0 && <div className="game-partners"><span>With</span>{partners.map(partner => <a key={partner.id} href={partner.url} target="_blank" rel="noreferrer">{partner.logo_url && <img src={partner.logo_url} alt="" />}<span>{partner.name}</span></a>)}</div>}
+      </ThemedFormHeader>
+      <PublicFormClient form={form} />
+    </>}
+  </FormThemeFrame>
 
   return (
     <FormThemeFrame theme={form.schema.theme}><div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_40%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(255,255,255,1)_100%)]">

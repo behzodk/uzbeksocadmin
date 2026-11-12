@@ -1,7 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { isIllustratedFormTheme } from "@/components/forms/themed-form-parts"
+
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react"
 import { AlertCircle, ArrowDown, ArrowUp, CheckCircle2, Loader2, Star, Upload } from "lucide-react"
+import { ThemedStatusCard } from "@/components/forms/themed-form-parts"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -44,7 +47,7 @@ function createInitialAnswers(form: Form): FormAnswers {
   return initialAnswers
 }
 
-export function PublicFormClient({ form }: { form: Form }) {
+export function PublicFormClient({ form, preview = false }: { form: Form; preview?: boolean }) {
   const fields = useMemo(() => getSortedFormFields(form), [form])
   const initialAnswers = useMemo(() => createInitialAnswers(form), [form])
   const [answers, setAnswers] = useState<FormAnswers>(initialAnswers)
@@ -66,11 +69,11 @@ export function PublicFormClient({ form }: { form: Form }) {
     setSubmittedAt(null)
   }, [initialAnswers])
 
-  useEffect(() => {
-    return () => {
-      Object.values(imageSelections).forEach((selection) => URL.revokeObjectURL(selection.previewUrl))
-    }
-  }, [imageSelections])
+  const imageSelectionsRef = useRef(imageSelections)
+  useEffect(() => { imageSelectionsRef.current = imageSelections }, [imageSelections])
+  useEffect(() => () => {
+    Object.values(imageSelectionsRef.current).forEach((selection) => URL.revokeObjectURL(selection.previewUrl))
+  }, [])
 
   const visibleFields = useMemo(() => getVisibleFormFields(fields, answers), [answers, fields])
 
@@ -143,6 +146,10 @@ export function PublicFormClient({ form }: { form: Form }) {
       return
     }
 
+    if (preview) {
+      setSubmittedAt(new Date().toISOString())
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -234,6 +241,8 @@ export function PublicFormClient({ form }: { form: Form }) {
     }
   }
 
+  if (submittedAt && isIllustratedFormTheme(form.schema.theme)) return <ThemedStatusCard theme={form.schema.theme} status="success" title={preview ? "Preview complete" : "Response received"} description={preview ? "Your preview is complete. No response or image has been saved." : undefined}><Button type="button" className="game-primary-action" onClick={() => setSubmittedAt(null)}>{preview ? "Back to preview" : "Submit another response"}</Button></ThemedStatusCard>
+
   if (submittedAt) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-6">
@@ -282,7 +291,7 @@ export function PublicFormClient({ form }: { form: Form }) {
 
         if (field.type === "content") {
           return (
-            <div key={field.id} className="rounded-2xl border border-border/70 bg-muted/20 p-5">
+            <div key={field.id} className="game-content-block rounded-2xl border border-border/70 bg-muted/20 p-5">
               {field.label ? <p className="mb-3 text-base font-semibold text-foreground">{field.label}</p> : null}
               {field.content_html ? (
                 <ContentPreview content={field.content_html} />
@@ -294,7 +303,7 @@ export function PublicFormClient({ form }: { form: Form }) {
         }
 
         return (
-          <div key={field.id} className="game-question space-y-3">
+          <div key={field.id} data-invalid={Boolean(error)} className="game-question space-y-3">
             {field.type !== "boolean" ? (
               <div className="space-y-1">
                 <Label htmlFor={field.key} className="text-sm font-medium text-foreground">
@@ -331,7 +340,7 @@ export function PublicFormClient({ form }: { form: Form }) {
             ) : null}
 
             {field.type === "email" && field.is_student_email ? (
-              <div className="flex overflow-hidden rounded-md border border-input shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
+              <div className="game-student-email flex overflow-hidden rounded-md border border-input shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
                 <input
                   id={field.key}
                   value={typeof answers[field.key] === "string" ? (answers[field.key] as string) : ""}
@@ -349,7 +358,7 @@ export function PublicFormClient({ form }: { form: Form }) {
 
             {field.type === "select" ? (
               field.use_radio_buttons ? (
-                <RadioGroup value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)} className="gap-3">
+                <RadioGroup value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)} aria-label={field.label} className="game-choice-grid gap-3">
                   {options.map((option) => (
                     <label
                       key={option}
