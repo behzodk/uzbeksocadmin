@@ -18,7 +18,8 @@ function loadModule(relativePath, dependencies = {}) {
   return module.exports
 }
 
-const validation = loadModule("lib/form-validation.ts")
+const textValidation = loadModule("lib/text-input-validation.ts")
+const validation = loadModule("lib/form-validation.ts", { "@/lib/text-input-validation": textValidation })
 const { validateFormField: validate } = validation
 const base = { id: "answer", key: "answer", label: "Answer", type: "text", required: true }
 const field = (overrides) => ({ ...base, ...overrides })
@@ -175,4 +176,43 @@ test("API enforces required descendants when all ancestors match", async () => {
   assert.equal(result.status, 400)
   assert.ok(result.body.errors.grandchild)
   assert.equal(harness.inserts.length, 0)
+})
+
+
+test("standard Latin is the default for every free-text field", () => {
+  for (const type of ["text", "textarea", "email"]) {
+    for (const value of ["Алекс", "Şahin", "Jose\u0301", "Ｊｏｈｎ", "name\u200b", "😀"]) {
+      assert.match(validate(field({ type }), value), /standard Latin/)
+    }
+  }
+  assert.equal(validate(field({}), "O’Connor-Smith 123"), null)
+  assert.equal(validate(field({ allow_non_latin: true }), "Şahin Алекс"), null)
+  assert.equal(validate(field({ type: "select", options: ["Şahin"] }), "Şahin"), null)
+})
+
+test("blocked words and phrases use case-insensitive complete boundaries", () => {
+  const rules = field({ blocked_words: ["test", "fake name", "a.b"], blocked_words_message: "Please enter your real name." })
+  for (const value of ["TEST", "a test name", "fake   NAME", "(a.b)"]) {
+    assert.equal(validate(rules, value), "Please enter your real name.")
+  }
+  for (const value of ["Contest", "Testing", "Jane Smith", "axb"]) assert.equal(validate(rules, value), null)
+  assert.ok(validate(field({ blocked_words: ["test"] }), "Test"))
+  assert.equal(validate(field({ blocked_words: ["", "   "] }), "Alice"), null)
+})
+
+test("API rejects blocked and non-Latin text before inserting", async () => {
+  const harness = routeHarness([field({ key: "name", blocked_words: ["test"], blocked_words_message: "Please enter your real name." })])
+  const blocked = await harness.submit({ name: "Test" })
+  assert.equal(blocked.status, 400)
+  assert.equal(blocked.body.errors.name, "Please enter your real name.")
+  assert.equal((await harness.submit({ name: "Şahin" })).status, 400)
+  assert.equal(harness.inserts.length, 0)
+  assert.equal((await harness.submit({ name: "Alice" })).status, 200)
+})
+
+test("API honours the field-specific alphabet exception", async () => {
+  const harness = routeHarness([field({ key: "name", allow_non_latin: true, blocked_words: ["test"] })])
+  assert.equal((await harness.submit({ name: "Şahin" })).status, 200)
+  assert.equal((await harness.submit({ name: "ｔｅｓｔ" })).status, 400)
+  assert.equal(harness.inserts.length, 1)
 })

@@ -1,3 +1,4 @@
+import { validateTextInput } from "@/lib/text-input-validation"
 import type { FormField } from "@/lib/types"
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -74,6 +75,9 @@ export function validateFormField(field: FormField, value: unknown, options: Val
     if (text && !allowed.includes(text)) return "Please select a valid option."
     return null
   }
+
+  const textError = validateTextInput(field, value)
+  if (textError) return textError
 
   if (field.type === "email") {
     if (!text) return field.required ? "Email is required." : null

@@ -3,6 +3,7 @@
 import { isIllustratedFormTheme } from "@/components/forms/themed-form-parts"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+import { isFreeTextField } from "@/lib/text-input-validation"
 import { PublicFormClient } from "@/components/forms/public-form-client"
 import { ThemedFormHeader } from "@/components/forms/themed-form-parts"
 import { FormThemeFrame, type FormTheme } from "@/components/forms/form-theme"
@@ -38,6 +39,7 @@ interface FormEditorProps {
 
 const FIELD_TYPES: { value: FormFieldType; label: string }[] = [
   { value: "text", label: "Text" },
+  { value: "textarea", label: "Long Text" },
   { value: "email", label: "Email" },
   { value: "select", label: "Select" },
   { value: "multi_select", label: "Multi Select" },
@@ -180,6 +182,9 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         content_html: field.content_html ?? null,
         required: field.required,
         is_secure: field.is_secure || false,
+        blocked_words: field.blocked_words || [],
+        blocked_words_message: field.blocked_words_message || "",
+        allow_non_latin: field.allow_non_latin || false,
         options: field.options || [],
         use_radio_buttons: field.use_radio_buttons || false,
         is_ranked: field.is_ranked || false,
@@ -395,7 +400,7 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
         }
       }
 
-      if (field.type === "text") {
+      if (field.type === "text" || field.type === "textarea") {
         const min = field.min_count ?? null
         const max = field.max_count ?? null
         if (min !== null && min < 0) return "Text min_count must be 0 or greater."
@@ -474,8 +479,8 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
             : false,
         is_ranked: field.type === "multi_select" ? Boolean(field.is_ranked) : undefined,
         order: index + 1,
-        min_count: field.type === "text" ? field.min_count ?? null : undefined,
-        max_count: field.type === "text" ? field.max_count ?? null : undefined,
+        min_count: (field.type === "text" || field.type === "textarea") ? field.min_count ?? null : undefined,
+        max_count: (field.type === "text" || field.type === "textarea") ? field.max_count ?? null : undefined,
         scale_min: field.type === "rating" ? field.scale_min ?? null : undefined,
         scale_max: field.type === "rating" ? field.scale_max ?? null : undefined,
         scale_type: field.type === "rating" ? field.scale_type ?? "numeric" : undefined,
@@ -491,6 +496,9 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
             : undefined,
         conditional,
         is_student_email: field.type === "email" ? Boolean(field.is_student_email) : undefined,
+        blocked_words: isFreeTextField(field) ? [...new Set((field.blocked_words || []).map(word => word.trim()).filter(Boolean))] : undefined,
+        blocked_words_message: isFreeTextField(field) ? field.blocked_words_message?.trim() || undefined : undefined,
+        allow_non_latin: isFreeTextField(field) ? Boolean(field.allow_non_latin) : undefined,
       }
     })
 
@@ -967,7 +975,26 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                               )}
                             </div>
 
-                            {field.type === "text" && (
+                            {isFreeTextField(field) && (
+                              <div className="space-y-4 rounded-lg border p-4">
+                                <p className="text-sm font-semibold">Text validation</p>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`blocked-words-${field.id}`}>Blocked words or phrases</Label>
+                                  <Textarea id={`blocked-words-${field.id}`} value={(field.blocked_words || []).join(",")} onChange={(event) => handleUpdateField(index, { blocked_words: event.target.value.split(",") })} placeholder="test, anonymous, fake name" rows={2} />
+                                  <p className="text-xs text-muted-foreground">Separate entries with commas. Matches whole words or phrases, ignoring case.</p>
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`blocked-message-${field.id}`}>Message for blocked entries</Label>
+                                  <Input id={`blocked-message-${field.id}`} value={field.blocked_words_message || ""} onChange={(event) => handleUpdateField(index, { blocked_words_message: event.target.value })} placeholder="Please enter your real name." />
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <div><Label htmlFor={`allow-non-latin-${field.id}`}>Allow other alphabets and accented letters</Label><p className="mt-1 text-xs text-muted-foreground">Off by default: use A-Z letters, numbers, spaces and punctuation. Turn on for names or answers that need other characters.</p></div>
+                                  <Switch id={`allow-non-latin-${field.id}`} checked={Boolean(field.allow_non_latin)} onCheckedChange={(checked) => handleUpdateField(index, { allow_non_latin: checked })} />
+                                </div>
+                              </div>
+                            )}
+
+                            {(field.type === "text" || field.type === "textarea") && (
                               <div className="grid gap-4 md:grid-cols-2">
                                 <div className="space-y-2">
                                   <Label>Min Count</Label>

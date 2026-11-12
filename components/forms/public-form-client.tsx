@@ -8,11 +8,13 @@ import { ThemedStatusCard } from "@/components/forms/themed-form-parts"
 import { ContentPreview } from "@/components/editor/content-preview"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { getSortedFormFields, getVisibleFormFields, isAnswerableFormField } from "@/lib/form-schema"
+import { validateTextInput } from "@/lib/text-input-validation"
 import { validateFormField } from "@/lib/form-validation"
 import { uploadFormImage } from "@/lib/form-image-storage"
 import { getSupabaseBrowserClient } from "@/lib/supabase/client"
@@ -79,14 +81,13 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
 
   const updateAnswer = (key: string, value: unknown) => {
     setAnswers((previous) => ({ ...previous, [key]: value }))
+    const field = fields.find((candidate) => candidate.key === key)
+    const error = field ? validateTextInput(field, value) : null
     setErrors((previous) => {
-      if (!(key in previous)) {
-        return previous
-      }
-
-      const nextErrors = { ...previous }
-      delete nextErrors[key]
-      return nextErrors
+      const next = { ...previous }
+      if (error) next[key] = error
+      else delete next[key]
+      return next
     })
   }
 
@@ -322,10 +323,12 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                 value={typeof answers[field.key] === "string" ? (answers[field.key] as string) : ""}
                 onChange={(event) => updateAnswer(field.key, event.target.value)}
                 maxLength={field.max_count ?? undefined}
-                aria-invalid={Boolean(error)}
+                aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}
                 placeholder={field.label}
               />
             ) : null}
+
+            {field.type === "textarea" && <Textarea id={field.key} value={typeof answers[field.key] === "string" ? answers[field.key] as string : ""} onChange={(event) => updateAnswer(field.key, event.target.value)} rows={4} maxLength={field.max_count ?? undefined} aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined} placeholder={field.label} />}
 
             {field.type === "email" && !field.is_student_email ? (
               <Input
@@ -334,7 +337,7 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                 value={typeof answers[field.key] === "string" ? (answers[field.key] as string) : ""}
                 onChange={(event) => updateAnswer(field.key, event.target.value.toLowerCase())}
                 maxLength={field.max_count ?? undefined}
-                aria-invalid={Boolean(error)}
+                aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}
                 placeholder="name@example.com"
               />
             ) : null}
@@ -346,7 +349,7 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                   value={typeof answers[field.key] === "string" ? (answers[field.key] as string) : ""}
                   onChange={(event) => updateAnswer(field.key, event.target.value.replace(/@/g, ""))}
                   maxLength={field.max_count ?? undefined}
-                  aria-invalid={Boolean(error)}
+                  aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}
                   placeholder="username"
                   className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm outline-none"
                 />
@@ -365,14 +368,14 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                       htmlFor={`${field.key}-${option}`}
                       className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background px-4 py-3 transition-colors hover:border-primary/40"
                     >
-                      <RadioGroupItem id={`${field.key}-${option}`} value={option} aria-invalid={Boolean(error)} />
+                      <RadioGroupItem id={`${field.key}-${option}`} value={option} aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined} />
                       <span className="text-sm text-foreground">{option}</span>
                     </label>
                   ))}
                 </RadioGroup>
               ) : (
                 <Select value={selectValue} onValueChange={(value) => updateAnswer(field.key, value)}>
-                  <SelectTrigger id={field.key} className="w-full" aria-invalid={Boolean(error)}>
+                  <SelectTrigger id={field.key} className="w-full" aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}>
                     <SelectValue placeholder="Select an option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -502,7 +505,7 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                       const nextValue = event.target.value
                       updateAnswer(field.key, nextValue === "" ? null : Number(nextValue))
                     }}
-                    aria-invalid={Boolean(error)}
+                    aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}
                     placeholder={`${field.scale_min ?? 1} to ${field.scale_max ?? 5}`}
                   />
                   {(field.min_label || field.max_label) ? (
@@ -521,7 +524,7 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
                   id={field.key}
                   type="file"
                   accept="image/*"
-                  aria-invalid={Boolean(error)}
+                  aria-invalid={Boolean(error)} aria-describedby={error ? `${field.key}-error` : undefined}
                   onChange={(event) => {
                     const file = event.target.files?.[0] || null
 
@@ -568,7 +571,7 @@ export function PublicFormClient({ form, preview = false }: { form: Form; previe
               </label>
             ) : null}
 
-            {error ? <p className="text-sm text-destructive">{error}</p> : null}
+            {error ? <p id={`${field.key}-error`} role="alert" className="text-sm text-destructive">{error}</p> : null}
           </div>
         )
       })}
