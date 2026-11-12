@@ -294,7 +294,7 @@ export function PublicFormClient({ form }: { form: Form }) {
         }
 
         return (
-          <div key={field.id} className="space-y-3">
+          <div key={field.id} className="game-question space-y-3">
             {field.type !== "boolean" ? (
               <div className="space-y-1">
                 <Label htmlFor={field.key} className="text-sm font-medium text-foreground">

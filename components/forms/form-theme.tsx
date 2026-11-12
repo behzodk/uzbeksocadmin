@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import "./form-theme.css"
+import "./game-theme.css"
 
 export type FormTheme = "standard" | "game" | "new-year"
 export function FormThemeFrame({ theme, children }: { theme?: string; children: ReactNode }) {

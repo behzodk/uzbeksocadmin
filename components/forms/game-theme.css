@@ -1,0 +1,51 @@
+/* Game Night: a tabletop score sheet, with a restrained two-ink palette. */
+.form-theme[data-form-theme="game"] {
+  --background: 0 0% 100%; --foreground: 229 48% 21%;
+  --card: 0 0% 100%; --card-foreground: 229 48% 21%;
+  --muted: 225 23% 95%; --muted-foreground: 228 13% 39%;
+  --primary: 230 51% 30%; --primary-foreground: 0 0% 100%;
+  --secondary: 225 30% 94%; --secondary-foreground: 229 48% 21%;
+  --border: 226 22% 78%; --input: 226 22% 78%; --ring: 230 51% 30%;
+  --accent: 225 30% 94%; --accent-foreground: 229 48% 21%;
+  position:relative;isolation:isolate;min-height:80vh;padding:24px 16px 56px;
+  background-color:#e8eaf0;background-image:radial-gradient(#24366a19 .8px,transparent .8px);background-size:12px 12px;
+  color:#1c2852;font-family:Arial,Helvetica,sans-serif;
+}
+[data-form-theme="game"] .theme-content{position:relative;max-width:704px;margin:auto}
+[data-form-theme="game"] .theme-margin-art{display:none}
+[data-form-theme="game"] .form-heading{background:#fff;border:1px solid #bdc4d6;border-radius:4px 4px 0 0;border-top:8px solid #26396e;padding:22px 28px;margin:0;overflow:visible}
+[data-form-theme="game"] .form-heading:after{content:"";position:absolute;inset:0 0 auto auto;width:72px;height:8px;background:repeating-linear-gradient(90deg,#c84236 0 9px,#fff 9px 18px)}
+[data-form-theme="game"] .form-heading .uzbek-pattern{display:none}
+[data-form-theme="game"] .form-heading .container{padding:0}
+[data-form-theme="game"] .form-heading .grid{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+[data-form-theme="game"] .form-heading .neo-badge{display:inline-block;background:transparent;border:0;box-shadow:none;padding:0;margin:0 0 8px;color:#b5362b;font:700 11px/1.4 monospace;letter-spacing:.13em}
+[data-form-theme="game"] h1{font-family:Arial,Helvetica,sans-serif;font-size:36px;line-height:1.08;letter-spacing:-.04em;font-weight:800;color:#1c2852;margin:0 0 10px}
+[data-form-theme="game"] .form-heading p{font:400 15px/1.55 Arial,Helvetica,sans-serif;color:#505a73}
+[data-form-theme="game"] .form-body{padding:0;background:transparent}
+[data-form-theme="game"] .form-body>.container{padding:0;max-width:none}
+[data-form-theme="game"] .form-body details{margin-top:12px;background:#fff;color:#1c2852;box-shadow:none;border:1px solid #bdc4d6}
+[data-form-theme="game"] form{counter-reset:question;margin:0!important;padding:0 28px 24px;background:#fff;color:#1c2852;border:1px solid #bdc4d6;border-top:0;border-radius:0 0 4px 4px;box-shadow:0 5px 0 #d5d9e3;}
+[data-form-theme="game"] form>.game-question{counter-increment:question;position:relative;padding:22px 0 22px 42px;margin:0!important;border-bottom:1px solid #e1e4ed}
+[data-form-theme="game"] .game-question:before{content:counter(question,decimal-leading-zero);position:absolute;left:0;top:23px;color:#8a93ab;font:500 12px/20px monospace}
+[data-form-theme="game"] .game-question:focus-within:before{color:#b5362b;font-weight:700}
+[data-form-theme="game"] .game-question label,[data-form-theme="game"] .game-question .font-display{font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.4;letter-spacing:0;font-weight:600}
+[data-form-theme="game"] .font-body{font-family:Arial,Helvetica,sans-serif}
+[data-form-theme="game"] input:not([type="checkbox"]):not([type="radio"]),[data-form-theme="game"] textarea,[data-form-theme="game"] select,[data-form-theme="game"] button[role="combobox"]{background:#fafbfe;color:#1c2852;border:1px solid #aab4ce;border-radius:3px;box-shadow:none;font:400 16px/1.5 Arial,Helvetica,sans-serif;min-height:44px;padding:10px 12px;}
+[data-form-theme="game"] input::placeholder,[data-form-theme="game"] textarea::placeholder{color:#788198}
+[data-form-theme="game"] input:focus-visible,[data-form-theme="game"] textarea:focus-visible,[data-form-theme="game"] button:focus-visible{outline:2px solid #26396e;outline-offset:3px}
+[data-form-theme="game"] .game-question .neo-card,[data-form-theme="game"] .game-question label:has(input[type="checkbox"]),[data-form-theme="game"] .game-question label:has(button[role="checkbox"]),[data-form-theme="game"] .game-question label:has(button[role="radio"]){border:1px solid #c2c9db;border-radius:3px;box-shadow:none;background:#fff;transform:none;transition:background-color .15s,border-color .15s}
+[data-form-theme="game"] .game-question label:has(:checked),[data-form-theme="game"] .game-question label:has([data-state="checked"]){background:#edf0f9;border-color:#26396e}
+[data-form-theme="game"] input[type="checkbox"],[data-form-theme="game"] input[type="radio"]{accent-color:#26396e}
+[data-form-theme="game"] form>p{font-size:12px;line-height:1.6;color:#626c83;margin-top:20px}
+[data-form-theme="game"] button[type="submit"]{background:#26396e;color:white;border:1px solid #26396e;border-radius:3px;box-shadow:0 3px 0 #121d42;min-height:46px;padding:10px 24px;font:600 14px/1.5 Arial,Helvetica,sans-serif;transition:background-color .15s,translate .15s}
+[data-form-theme="game"] button[type="submit"]:hover{background:#1c2b58;transform:none}
+[data-form-theme="game"] button[type="submit"]:active{translate:0 2px;box-shadow:none}
+[data-form-theme="game"] button:disabled{opacity:.55}
+[data-form-theme="game"] .theme-content>div{background:transparent}
+[data-form-theme="game"] .theme-content>div>header{display:none}
+[data-form-theme="game"] main{padding:0;max-width:none}
+[data-form-theme="game"] main>div{background:#fff;border:1px solid #bdc4d6;border-top:8px solid #26396e;border-radius:4px;box-shadow:none}
+[data-form-theme="game"] main>div>div{padding:24px}
+[data-form-theme="game"] main form{padding:0;border:0;box-shadow:none}
+@media(max-width:600px){.form-theme[data-form-theme="game"]{padding:12px 10px 32px}[data-form-theme="game"] .form-heading{padding:20px}[data-form-theme="game"] h1{font-size:29px}[data-form-theme="game"] form{padding:0 20px 24px}[data-form-theme="game"] form>.game-question{padding-left:30px}[data-form-theme="game"] .game-question:before{font-size:10px}}
+@media(prefers-reduced-motion:reduce){[data-form-theme="game"] *{transition:none!important;animation:none!important}}

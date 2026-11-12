@@ -633,12 +633,24 @@ export function FormEditor({ form, events, linkedEventIds }: FormEditorProps) {
                   <legend className="text-sm font-medium">Form theme</legend>
                   <p className="text-sm text-muted-foreground">Set the mood for your public registration page.</p>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    {([['standard', 'Standard', 'The familiar society look.'], ['game', 'Game Night', 'Warm paper, playful pieces, friendly competition.'], ['new-year', 'New Year', 'Midnight blue, champagne details, a fresh start.']] as const).map(([value, label, description]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${theme === value ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
+                    {([['standard', 'Standard', 'The familiar society look.'], ['game', 'Game Night', 'Tabletop scorecard. Ink blue, red accents, numbered questions.'], ['new-year', 'New Year', 'Midnight blue, champagne details, a fresh start.']] as const).map(([value, label, description]) => <label key={value} className={`cursor-pointer rounded-xl border p-4 ${theme === value ? 'border-primary ring-1 ring-primary' : 'border-border'}`}>
                       <input type="radio" name="form-theme" value={value} checked={theme === value} onChange={() => setTheme(value)} className="mr-2" />
                       <span className="font-medium">{label}</span><p className="mt-2 text-xs text-muted-foreground">{description}</p>
                     </label>)}
                   </div>
-                  <FormThemeFrame theme={theme}><div className="p-6"><h1 className="text-3xl">{formMeta.title || 'Your next great gathering'}</h1></div></FormThemeFrame>
+                  <FormThemeFrame theme={theme}>
+                    <section className="form-heading relative p-6">
+                      <span className="neo-badge">{theme === "game" ? "GAME NIGHT / SIGN-UP SHEET" : "Registration"}</span>
+                      <h1 className="text-3xl">{formMeta.title || 'Your next great gathering'}</h1>
+                      <p className="mt-2 text-sm">{formMeta.description || 'Fill in your details to join us.'}</p>
+                    </section>
+                    <form onSubmit={(event) => event.preventDefault()} aria-label="Theme preview" className="p-6 space-y-4">
+                      <div className="game-question space-y-3"><label htmlFor="theme-preview-name">Your name</label><Input id="theme-preview-name" placeholder="Full name" readOnly tabIndex={-1} /></div>
+                      <div className="game-question space-y-3"><label htmlFor="theme-preview-email">Email address</label><Input id="theme-preview-email" placeholder="you@example.com" readOnly tabIndex={-1} /></div>
+                      <p>Preview only. Your saved fields appear on the public form.</p>
+                      <Button type="submit">Submit registration</Button>
+                    </form>
+                  </FormThemeFrame>
                 </fieldset>
 
                 <div className="grid gap-4 md:grid-cols-2">
