@@ -26,3 +26,28 @@
 
 .form-theme[data-form-theme="new-year"] .theme-content main h1{color:#203b31}
 .form-theme[data-form-theme="new-year"] .theme-content>div>header{background:#171f2a;color:#eaddc0}
+
+/* Decoration occupies the page margins, never the reading flow. */
+.theme-margin-art{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:-1}
+.theme-margin-art>:first-child{position:absolute;top:190px;left:calc(50% - 470px);scale:.65;opacity:.6}
+.theme-margin-art>:last-child{position:absolute;top:430px;right:calc(50% - 470px);scale:.65;opacity:.5}
+.form-theme:not([data-form-theme="standard"]){padding-top:24px;min-height:80vh}
+.form-theme:not([data-form-theme="standard"]) .form-heading{max-width:720px;margin:0 auto 16px;padding:24px 28px;background:#fffcf6;border:1px solid #203b3125;border-top:5px solid #35634e;border-radius:10px;color:#203b31}
+.form-theme:not([data-form-theme="standard"]) .form-heading .container{padding:0}
+.form-theme:not([data-form-theme="standard"]) .form-heading .grid{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+.form-theme:not([data-form-theme="standard"]) .form-heading .neo-badge{border:0;box-shadow:none;background:none;padding:0;font:600 11px/1.4 sans-serif;letter-spacing:.08em;margin-bottom:10px;color:#53675d}
+.form-theme:not([data-form-theme="standard"]) h1{font-family:inherit;font-size:30px;font-weight:600;letter-spacing:-.025em;line-height:1.2;margin-bottom:10px}
+.form-theme:not([data-form-theme="standard"]) .form-heading p{color:#53605a;font-size:15px;line-height:1.6}
+.form-theme:not([data-form-theme="standard"]) .form-body{padding:0}
+.form-theme:not([data-form-theme="standard"]) .form-body>.container{max-width:720px;padding:0}
+.form-theme:not([data-form-theme="standard"]) form{max-width:720px;padding:24px 28px;border-radius:10px;box-shadow:none}
+.form-theme[data-form-theme="new-year"]{background:#eef0f5;--secondary-foreground:160 29% 16%}
+.form-theme[data-form-theme="new-year"] .theme-content h1{color:#24334b}
+.form-theme[data-form-theme="new-year"] .form-heading{border-top-color:#b89a53}
+.form-theme:not([data-form-theme="standard"]) .theme-content>div>header{display:none}
+.form-theme:not([data-form-theme="standard"]) .theme-content main{max-width:776px;padding:0 28px}
+.form-theme:not([data-form-theme="standard"]) .theme-content main>div{border-radius:10px;box-shadow:none;border-top:5px solid #35634e}
+.form-theme:not([data-form-theme="standard"]) .theme-content main>div>div{padding:24px}
+.form-theme:not([data-form-theme="standard"]) .theme-content main .lg\:grid-cols-\[minmax\(0\,1fr\)_15rem\]{display:block}
+@media(max-width:960px){.theme-margin-art{display:none}}
+@media(max-width:760px){.form-theme:not([data-form-theme="standard"]){padding:16px 12px 32px}.form-theme:not([data-form-theme="standard"]) .form-heading,.form-theme:not([data-form-theme="standard"]) form{padding:20px}.form-theme:not([data-form-theme="standard"]) h1{font-size:26px}.form-theme:not([data-form-theme="standard"]) .theme-content main{padding:0}}
