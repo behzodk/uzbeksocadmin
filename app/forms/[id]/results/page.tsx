@@ -1,281 +1,92 @@
 import { notFound } from "next/navigation"
-import { Download, Table2 } from "lucide-react"
+import { Download, ClipboardList } from "lucide-react"
 import { getSupabaseAdminClient } from "@/lib/supabase/admin"
-import { normalizeFormPartners } from "@/lib/form-partners"
-import { buildPublicFormResults, type FormResponseRecord } from "@/lib/form-results"
-import { parseFormImageAnswer } from "@/lib/form-image-storage"
 import { getSortedFormFields, isAnswerableFormField } from "@/lib/form-schema"
-import type { Form, FormField } from "@/lib/types"
-import { PublicFormPartners } from "@/components/forms/public-form-partners"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { PublicResultsTable, type PublicResultsField, type PublicResultsRow } from "./public-results-table"
+import { buildPublicResultsRows, type PublicResultsField } from "@/lib/results-workspace"
+import type { Form } from "@/lib/types"
+import type { FormResponseRecord } from "@/lib/form-results"
+import { PublicResultsTable } from "./public-results-table"
+import "./results-workspace.css"
 
-interface PageProps {
-  params: Promise<{ id: string }>
-}
-
-const longDate = new Intl.DateTimeFormat("en-US", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-})
-
-const shortDate = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-})
-
-const dateTime = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-  hour: "numeric",
-  minute: "2-digit",
-})
-
-const serializeCellValue = (value: unknown, field: FormField) => {
-  if (value === null || value === undefined || value === "") {
-    return ""
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No"
-  }
-
-  if (Array.isArray(value)) {
-    return value.length ? value.map((item) => String(item)).join(", ") : ""
-  }
-
-  if (field.type === "image") {
-    return parseFormImageAnswer(value)?.url || ""
-  }
-
-  if (typeof value === "object") {
-    return JSON.stringify(value)
-  }
-
-  if (field.type === "email") {
-    return String(value).toLowerCase()
-  }
-
-  return String(value)
-}
-
-const formatCellValue = (value: unknown, field: FormField) => {
-  const serialized = serializeCellValue(value, field)
-
-  if (!serialized) {
-    return "—"
-  }
-
-  if (field.is_secure) {
-    return "*".repeat(serialized.length)
-  }
-
-  return serialized
-}
-
+export const dynamic = "force-dynamic"
 async function getPublicFormResults(id: string) {
   const supabase = getSupabaseAdminClient()
-  const { data: formById, error: formByIdError } = await supabase
+  const { data: byId } = await supabase
     .from("forms")
-    .select("id, slug, title, is_active, max_response, schema, partners, event_id, created_at")
+    .select("id, slug, title, schema, max_response")
     .eq("id", id)
     .maybeSingle()
-
-  if (formByIdError) {
-    return null
-  }
-
   const form =
-    formById ||
+    byId ||
     (
       await supabase
         .from("forms")
-        .select("id, slug, title, is_active, max_response, schema, partners, event_id, created_at")
+        .select("id, slug, title, schema, max_response")
         .eq("slug", id)
         .maybeSingle()
     ).data
-
-  if (!form) {
-    return null
-  }
-
-  const { data: responses, error: responseError } = await supabase
+  if (!form) return null
+  const { data, error } = await supabase
     .from("form_submissions")
     .select("id, form_id, status, answers, created_at")
     .eq("form_id", form.id)
     .order("created_at", { ascending: false })
-
-  if (responseError || !responses) {
-    return null
-  }
-
-  return {
-    form: form as Form,
-    responses: responses as FormResponseRecord[],
-    results: buildPublicFormResults(form as Form, responses as FormResponseRecord[]),
-  }
+  if (error || !data) return null
+  return { form: form as Form, responses: data as FormResponseRecord[] }
 }
-
-export async function generateMetadata({ params }: PageProps) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const data = await getPublicFormResults(id)
-
-  if (!data) {
-    return {
-      title: "Form Results",
-      description: "Public form results",
-    }
-  }
-
   return {
-    title: `${data.form.title} Results`,
-    description: `Public response summary for ${data.form.title}.`,
+    title: data ? `${data.form.title} · Responses` : "Form results",
+    description: "Form submission records and response insights.",
   }
 }
-
-function ResultBar({
-  label,
-  count,
-  percentage,
-  tone = "bg-primary",
-}: {
-  label: string
-  count: number
-  percentage: number
-  tone?: string
-}) {
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="min-w-0 truncate font-medium text-foreground">{label}</span>
-        <span className="shrink-0 text-muted-foreground">
-          {count} · {percentage.toFixed(1)}%
-        </span>
-      </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-muted">
-        <div className={`h-full rounded-full ${tone}`} style={{ width: `${Math.max(percentage, 3)}%` }} />
-      </div>
-    </div>
-  )
-}
-
-export default async function PublicFormResultsPage({ params }: PageProps) {
+export default async function PublicFormResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const data = await getPublicFormResults(id)
-
-  if (!data) {
-    notFound()
-  }
-
-  const { form, responses, results } = data
-  const fields = getSortedFormFields(form).filter(isAnswerableFormField)
-  const partners = normalizeFormPartners(form.partners)
-  const tableFields: PublicResultsField[] = fields.map((field) => ({
+  if (!data) notFound()
+  const { form, responses } = data
+  const schemaFields = getSortedFormFields(form).filter(isAnswerableFormField)
+  const fields: PublicResultsField[] = schemaFields.map((field) => ({
     id: field.id,
     key: field.key,
     label: field.label,
-    isSecure: Boolean(field.is_secure),
     type: field.type,
+    isSecure: Boolean(field.is_secure),
+    isRanked: field.type === "multi_select" && Boolean(field.is_ranked),
   }))
-  const tableRows: PublicResultsRow[] = responses.map((response) => ({
-    id: response.id,
-    submittedAt: response.created_at,
-    submittedLabel: dateTime.format(new Date(response.created_at)),
-    status: response.status,
-    values: Object.fromEntries(
-      fields.map((field) => [field.key, formatCellValue(response.answers?.[field.key], field)]),
-    ) as Record<string, string>,
-  }))
-
+  const rows = buildPublicResultsRows(schemaFields, responses)
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,rgba(15,23,42,0.08),transparent_40%),linear-gradient(180deg,rgba(248,250,252,1)_0%,rgba(255,255,255,1)_100%)]">
-      <header className="border-b border-border/70 bg-background/95 supports-[backdrop-filter]:bg-background/85 supports-[backdrop-filter]:backdrop-blur">
-        <div className="mx-auto max-w-6xl px-6 py-5">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">Public Results</p>
-            <p className="mt-1 text-sm text-muted-foreground">Live summary of submitted responses</p>
+    <div className="results-workspace">
+      <header className="results-appbar">
+        <div className="results-appbar-inner">
+          <div className="results-identity">
+            <span className="results-app-icon">
+              <ClipboardList size={20} />
+            </span>
+            <div>
+              <h1>{form.title}</h1>
+              <p>Responses</p>
+            </div>
           </div>
+          <a
+            className="results-export"
+            href={`/forms/${form.id}/results/export`}
+            title="Download all responses as an Excel workbook"
+          >
+            <Download size={17} />
+            <span>Download Excel</span>
+          </a>
         </div>
       </header>
-
-      <main className="mx-auto max-w-6xl px-6 py-10 md:py-14">
-        <section className="rounded-[2rem] border border-border/70 bg-card p-6 shadow-sm sm:p-8 lg:p-10">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start">
-            <div className="min-w-0 max-w-3xl space-y-5">
-              <Badge className="px-3 py-1 text-[11px] uppercase tracking-[0.2em]">Form Results</Badge>
-              <div className="space-y-3">
-                <h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">{form.title}</h1>
-                <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                  Aggregated public results for this form. Charts and summaries update as new responses come in.
-                </p>
-                <Button asChild variant="outline" size="sm" className="mt-2 gap-2">
-                  <a href={`/forms/${form.id}/results/export`}>
-                    <Download className="h-4 w-4" />
-                    Download Excel
-                  </a>
-                </Button>
-
-                <PublicFormPartners partners={partners} />
-              </div>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Responses</p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">{results.totalResponses}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Fields</p>
-                <p className="mt-2 text-3xl font-semibold text-foreground">{fields.length}</p>
-              </div>
-              <div className="rounded-2xl border border-border/60 bg-muted/25 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Updated</p>
-                <p className="mt-2 text-lg font-semibold text-foreground">
-                  {results.latestResponse ? shortDate.format(new Date(results.latestResponse)) : "No data"}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-10 space-y-4">
-          <div className="max-w-3xl">
-            <h2 className="text-2xl font-semibold text-foreground">Submission Records</h2>
-            <p className="mt-2 text-muted-foreground">
-              Each row represents a single submission. All answer fields are shown as columns so you can review each
-              person&apos;s record in one place.
-            </p>
-          </div>
-
-          <Card className="overflow-hidden border-border/80 bg-card shadow-sm">
-            <CardHeader className="border-b border-border/70 bg-muted/25">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
-                      <Table2 className="h-4 w-4" />
-                    </div>
-                    <Badge variant="outline">Public Table</Badge>
-                  </div>
-                  <CardTitle className="text-xl leading-tight">All Submitted Records</CardTitle>
-                  <CardDescription>
-                    {responses.length} rows · {fields.length} form fields
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className="p-0">
-              <PublicResultsTable fields={tableFields} rows={tableRows} />
-            </CardContent>
-          </Card>
-        </section>
+      <main className="results-main">
+        <PublicResultsTable fields={fields} rows={rows} capacity={form.max_response} now={Date.now()} />
       </main>
+      <footer className="results-footer">
+        These form results may be used solely for event management by the currently elected Committee members
+        of the Uzbek Society at the University of Birmingham.
+      </footer>
     </div>
   )
 }

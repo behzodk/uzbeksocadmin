@@ -1,32 +1,25 @@
 "use client"
-
-import { useEffect, useMemo, useState } from "react"
-import type { FormFieldType } from "@/lib/types"
-import { Search, SlidersHorizontal, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-
-export interface PublicResultsField {
-  id: string
-  key: string
-  label: string
-  isSecure: boolean
-  type: FormFieldType
-}
-
-export interface PublicResultsRow {
-  id: string
-  submittedAt: string
-  submittedLabel: string
-  status: string
-  values: Record<string, string>
-}
-
+import { useEffect, useMemo, useRef, useState } from "react"
+import {
+  Search,
+  SlidersHorizontal,
+  X,
+  LockKeyhole,
+  ChevronLeft,
+  ChevronRight,
+  ArrowDown,
+  ArrowUp,
+  Inbox,
+} from "lucide-react"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet"
+import { formatResultsDate, type PublicResultsField, type PublicResultsRow } from "@/lib/results-workspace"
+import { ResultsAnalytics } from "./results-analytics"
+export type { PublicResultsField, PublicResultsRow } from "@/lib/results-workspace"
 interface PublicResultsTableProps {
   fields: PublicResultsField[]
   rows: PublicResultsRow[]
+  capacity?: number | null
+  now: number
 }
 
 type SortOption = "newest" | "oldest" | "status_asc" | "status_desc"
@@ -34,7 +27,7 @@ type SortOption = "newest" | "oldest" | "status_asc" | "status_desc"
 const PAGE_SIZE_OPTIONS = ["10", "25", "50", "100"]
 const isHttpUrl = (value: string) => value.startsWith("http://") || value.startsWith("https://")
 
-export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
+export function PublicResultsTable({ fields, rows, capacity, now }: PublicResultsTableProps) {
   const [globalSearch, setGlobalSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [fromDate, setFromDate] = useState("")
@@ -43,10 +36,14 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
   const [pageSize, setPageSize] = useState("25")
   const [page, setPage] = useState(1)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [detail, setDetail] = useState<{ row: PublicResultsRow; field: PublicResultsField } | null>(null)
   const [columnFilters, setColumnFilters] = useState<Record<string, string>>({})
 
   const statusOptions = useMemo(() => Array.from(new Set(rows.map((row) => row.status))).sort(), [rows])
-  const fieldKeyLookup = useMemo(() => new Map(fields.map((field) => [field.key.toLowerCase(), field.key])), [fields])
+  const fieldKeyLookup = useMemo(
+    () => new Map(fields.map((field) => [field.key.toLowerCase(), field.key])),
+    [fields],
+  )
 
   const clearFilters = () => {
     setGlobalSearch("")
@@ -60,10 +57,10 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
 
   const hasActiveFilters = Boolean(
     globalSearch.trim() ||
-      statusFilter !== "all" ||
-      fromDate ||
-      toDate ||
-      Object.values(columnFilters).some((value) => value.trim()),
+    statusFilter !== "all" ||
+    fromDate ||
+    toDate ||
+    Object.values(columnFilters).some((value) => value.trim()),
   )
 
   const filteredRows = useMemo(() => {
@@ -71,7 +68,7 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
     const hasGlobalSearch = normalizedGlobal.length > 0
 
     return rows.filter((row) => {
-      const submittedDate = row.submittedAt.slice(0, 10)
+      const submittedDate = row.submittedDate
       if (statusFilter !== "all" && row.status !== statusFilter) return false
       if (fromDate && submittedDate < fromDate) return false
       if (toDate && submittedDate > toDate) return false
@@ -85,7 +82,9 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
 
       if (!hasGlobalSearch) return true
 
-      const searchableParts = [row.submittedLabel, row.status, ...Object.values(row.values)].map((part) => part.toLowerCase())
+      const searchableParts = [row.submittedLabel, row.status, ...Object.values(row.values)].map((part) =>
+        part.toLowerCase(),
+      )
       const tokens = normalizedGlobal.split(/\s+/).filter(Boolean)
 
       for (const token of tokens) {
@@ -101,7 +100,8 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
           }
 
           if (prefix === "date") {
-            if (!submittedDate.includes(value) && !row.submittedLabel.toLowerCase().includes(value)) return false
+            if (!submittedDate.includes(value) && !row.submittedLabel.toLowerCase().includes(value))
+              return false
             continue
           }
 
@@ -130,9 +130,17 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
       return cloned.sort((a, b) => new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime())
     }
     if (sortBy === "status_asc") {
-      return cloned.sort((a, b) => a.status.localeCompare(b.status) || new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+      return cloned.sort(
+        (a, b) =>
+          a.status.localeCompare(b.status) ||
+          new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+      )
     }
-    return cloned.sort((a, b) => b.status.localeCompare(a.status) || new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
+    return cloned.sort(
+      (a, b) =>
+        b.status.localeCompare(a.status) ||
+        new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+    )
   }, [filteredRows, sortBy])
 
   const pageSizeNumber = Number(pageSize)
@@ -152,251 +160,460 @@ export function PublicResultsTable({ fields, rows }: PublicResultsTableProps) {
     setColumnFilters((prev) => ({ ...prev, [key]: value }))
   }
 
-  if (rows.length === 0) {
-    return <div className="px-6 py-12 text-center text-sm text-muted-foreground">No responses yet.</div>
+  const detailTrigger = useRef<HTMLButtonElement | null>(null)
+  const openDetail = (row: PublicResultsRow, field: PublicResultsField, trigger: HTMLButtonElement) => {
+    detailTrigger.current = trigger
+    setDetail({ row, field })
+  }
+  const chips: Array<{ key: string; label: string; clear: () => void }> = []
+  if (globalSearch.trim())
+    chips.push({
+      key: "search",
+      label: `Search: ${globalSearch}`,
+      clear: () => {
+        setGlobalSearch("")
+        setPage(1)
+      },
+    })
+  if (statusFilter !== "all")
+    chips.push({
+      key: "status",
+      label: `Status: ${statusFilter}`,
+      clear: () => {
+        setStatusFilter("all")
+        setPage(1)
+      },
+    })
+  if (fromDate)
+    chips.push({
+      key: "from",
+      label: `From ${fromDate}`,
+      clear: () => {
+        setFromDate("")
+        setPage(1)
+      },
+    })
+  if (toDate)
+    chips.push({
+      key: "to",
+      label: `To ${toDate}`,
+      clear: () => {
+        setToDate("")
+        setPage(1)
+      },
+    })
+  fields.forEach((field) => {
+    if (columnFilters[field.key]?.trim())
+      chips.push({
+        key: field.key,
+        label: `${field.label}: ${columnFilters[field.key]}`,
+        clear: () => updateColumnFilter(field.key, ""),
+      })
+  })
+  const columnWidth = (field: PublicResultsField) =>
+    field.type === "multi_select"
+      ? 320
+      : field.type === "image"
+        ? 130
+        : field.type === "email" || field.type === "text"
+          ? 180
+          : 150
+  const tableWidth = 195 + 115 + fields.reduce((sum, field) => sum + columnWidth(field), 0)
+
+  function renderCell(row: PublicResultsRow, field: PublicResultsField) {
+    const value = row.values[field.key] || "—"
+    if (field.isSecure && value !== "—")
+      return (
+        <span className="results-masked">
+          <LockKeyhole size={13} />
+          <span aria-label="Protected answer">••••••••</span>
+        </span>
+      )
+    const choices = row.choices[field.key]
+    if (choices?.length)
+      return (
+        <div className="results-choice-cell">
+          {field.isRanked ? (
+            <ol className="results-ranking-preview">
+              {choices.slice(0, 2).map((choice, i) => (
+                <li key={i}>
+                  <span className="results-rank" aria-hidden="true">
+                    {i + 1}
+                  </span>
+                  <span title={choice}>{choice}</span>
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div className="results-answer-chips">
+              {choices.slice(0, 2).map((choice, i) => (
+                <span key={i} title={choice}>
+                  {choice}
+                </span>
+              ))}
+            </div>
+          )}
+          {(choices.length > 2 || choices.some((choice) => choice.length > 35)) && (
+            <button
+              className="results-text-button"
+              onClick={(event) => openDetail(row, field, event.currentTarget)}
+            >
+              View all {choices.length}{" "}
+              {field.isRanked
+                ? choices.length === 1
+                  ? "choice"
+                  : "choices"
+                : choices.length === 1
+                  ? "selection"
+                  : "selections"}
+            </button>
+          )}
+        </div>
+      )
+    if (field.type === "image" && isHttpUrl(value))
+      return (
+        <a href={value} target="_blank" rel="noreferrer" className="results-image-link">
+          <img src={value} alt={`${field.label} submission`} />
+          <span>Open image</span>
+        </a>
+      )
+    return (
+      <div className="results-text-cell">
+        <span className="results-clamp" title={value}>
+          {value}
+        </span>
+        {value.length > 40 && (
+          <button
+            className="results-text-button"
+            onClick={(event) => openDetail(row, field, event.currentTarget)}
+          >
+            Read more
+          </button>
+        )}
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-4 p-4 sm:p-6">
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div className="xl:col-span-2">
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Search</label>
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
+    <>
+      <section className="results-records" aria-label="Submission records">
+        <div className="results-toolbar">
+          <div className="results-search">
+            <Search size={17} />
+            <input
+              aria-label="Search records"
               value={globalSearch}
               onChange={(event) => {
                 setPage(1)
                 setGlobalSearch(event.target.value)
               }}
-              className="pl-9"
-              placeholder='Search all columns or use tokens like "status:approved" or "email:gmail"'
+              placeholder="Search records…"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Status</label>
-          <Select
+          <select
+            aria-label="Filter by status"
             value={statusFilter}
-            onValueChange={(value) => {
+            onChange={(event) => {
+              setStatusFilter(event.target.value)
               setPage(1)
-              setStatusFilter(value)
             }}
           >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {statusOptions.map((status) => (
-                <SelectItem key={status} value={status}>
-                  {status}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Sort</label>
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
-              <SelectItem value="status_asc">Status A to Z</SelectItem>
-              <SelectItem value="status_desc">Status Z to A</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Submitted From</label>
-          <Input
-            type="date"
-            value={fromDate}
-            onChange={(event) => {
-              setPage(1)
-              setFromDate(event.target.value)
-            }}
-          />
-        </div>
-        <div>
-          <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Submitted To</label>
-          <Input
-            type="date"
-            value={toDate}
-            onChange={(event) => {
-              setPage(1)
-              setToDate(event.target.value)
-            }}
-          />
-        </div>
-        <div className="flex items-end gap-2 xl:col-span-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAdvanced((value) => !value)}
-            className="gap-2"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {showAdvanced ? "Hide column filters" : "Show column filters"}
-          </Button>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-2">
-              <X className="h-4 w-4" />
-              Clear all filters
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {showAdvanced && (
-        <div className="space-y-3 rounded-xl border border-border/70 bg-muted/20 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">Column Filters</p>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {fields.map((field) => (
-              <div key={field.id} className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {field.label}
-                  {field.isSecure ? " (masked)" : ""}
-                </label>
-                <Input
-                  value={columnFilters[field.key] || ""}
-                  onChange={(event) => updateColumnFilter(field.key, event.target.value)}
-                  placeholder={`Contains...`}
-                />
-              </div>
+            <option value="all">All statuses</option>
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
             ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm text-muted-foreground">
-          Showing <span className="font-medium text-foreground">{paginatedRows.length}</span> of{" "}
-          <span className="font-medium text-foreground">{sortedRows.length}</span> matched rows
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">Rows per page</span>
-          <Select
-            value={pageSize}
-            onValueChange={(value) => {
+          </select>
+          <select
+            aria-label="Sort records"
+            value={sortBy}
+            onChange={(event) => {
+              setSortBy(event.target.value as SortOption)
               setPage(1)
-              setPageSize(value)
             }}
           >
-            <SelectTrigger className="h-8 w-[88px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={size}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="status_asc">Status A–Z</option>
+            <option value="status_desc">Status Z–A</option>
+          </select>
+          <button
+            className={`results-filter-button ${showAdvanced ? "is-active" : ""}`}
+            aria-expanded={showAdvanced}
+            aria-controls="results-filter-panel"
+            onClick={() => setShowAdvanced((value) => !value)}
+          >
+            <SlidersHorizontal size={16} />
+            Filters{chips.length > 0 && <span>{chips.length}</span>}
+          </button>
         </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
-          <thead className="bg-muted/35">
-            <tr className="border-b border-border/70 align-top">
-              <th className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Submitted
-              </th>
-              <th className="whitespace-nowrap px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                Status
-              </th>
+        {showAdvanced && (
+          <div className="results-filter-panel" id="results-filter-panel">
+            <div className="results-filter-heading">
+              <strong>Refine records</strong>
+              <span>Dates use London time</span>
+            </div>
+            <div className="results-filter-grid">
+              <label>
+                Submitted from
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) => {
+                    setFromDate(event.target.value)
+                    setPage(1)
+                  }}
+                />
+              </label>
+              <label>
+                Submitted to
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(event) => {
+                    setToDate(event.target.value)
+                    setPage(1)
+                  }}
+                />
+              </label>
+              {fields
+                .filter((field) => !field.isSecure)
+                .map((field) => (
+                  <label key={field.key}>
+                    {field.label}
+                    <input
+                      value={columnFilters[field.key] || ""}
+                      onChange={(event) => updateColumnFilter(field.key, event.target.value)}
+                      placeholder="Contains…"
+                    />
+                  </label>
+                ))}
+            </div>
+            {fromDate && toDate && fromDate > toDate && (
+              <p role="alert" className="results-date-error">
+                The start date must be on or before the end date.
+              </p>
+            )}
+            <p className="results-search-help">
+              Search also supports <code>status:approved</code>, <code>date:2026-11</code> and{" "}
+              <code>field-key:value</code>.
+            </p>
+          </div>
+        )}
+        {chips.length > 0 && (
+          <div className="results-active-filters" aria-label="Active filters">
+            {chips.map((chip) => (
+              <button key={chip.key} onClick={chip.clear} aria-label={`Remove ${chip.label}`}>
+                <span>{chip.label}</span>
+                <X size={13} />
+              </button>
+            ))}
+            <button className="results-clear" onClick={clearFilters}>
+              Clear all
+            </button>
+          </div>
+        )}
+        <div className="results-record-count" role="status">
+          <strong>{sortedRows.length.toLocaleString("en-GB")}</strong>{" "}
+          {hasActiveFilters ? `matching records of ${rows.length}` : "records"}
+          <span>All times in London</span>
+        </div>
+        <div
+          className="results-table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Scrollable submission records"
+        >
+          <table className="results-table" style={{ minWidth: tableWidth }}>
+            <caption className="sr-only">
+              Submission records. Ranked choices show their first two preferences; use View all choices to
+              inspect the full ranking.
+            </caption>
+            <colgroup>
+              <col style={{ width: 195 }} />
+              <col style={{ width: 115 }} />
               {fields.map((field) => (
+                <col key={field.key} style={{ width: columnWidth(field) }} />
+              ))}
+            </colgroup>
+            <thead>
+              <tr>
                 <th
-                  key={field.id}
-                  className="min-w-[180px] px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground"
+                  scope="col"
+                  aria-sort={sortBy === "newest" ? "descending" : sortBy === "oldest" ? "ascending" : "none"}
                 >
-                  <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setSortBy(sortBy === "newest" ? "oldest" : "newest")
+                      setPage(1)
+                    }}
+                  >
+                    Submitted {sortBy === "oldest" ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+                  </button>
+                </th>
+                <th scope="col">Status</th>
+                {fields.map((field) => (
+                  <th scope="col" key={field.key}>
                     <span>{field.label}</span>
                     {field.isSecure && (
-                      <div className="text-[10px] font-medium normal-case tracking-normal text-muted-foreground/90">
-                        Masked publicly
-                      </div>
+                      <small>
+                        <LockKeyhole size={11} />
+                        Protected
+                      </small>
                     )}
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedRows.map((row, index) => (
-              <tr key={row.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/10"}>
-                <td className="whitespace-nowrap border-b border-border/60 px-4 py-4 align-top font-medium text-foreground">
-                  {row.submittedLabel}
-                </td>
-                <td className="border-b border-border/60 px-4 py-4 align-top">
-                  <Badge variant="secondary" className="capitalize">
-                    {row.status}
-                  </Badge>
-                </td>
-                {fields.map((field) => (
-                  <td
-                    key={`${row.id}-${field.id}`}
-                    className="min-w-[180px] max-w-[320px] border-b border-border/60 px-4 py-4 align-top text-foreground"
-                  >
-                    {field.type === "image" && !field.isSecure && row.values[field.key] && isHttpUrl(row.values[field.key]) ? (
-                      <a
-                        href={row.values[field.key]}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block space-y-2 rounded-lg border border-border/70 p-2 hover:bg-muted/20"
-                      >
-                        <img
-                          src={row.values[field.key]}
-                          alt={`${field.label} submission`}
-                          className="h-24 w-full rounded-md object-cover"
-                        />
-                        <span className="block text-xs font-medium text-primary">Open image</span>
-                      </a>
-                    ) : (
-                      <div className="whitespace-normal break-words leading-6">{row.values[field.key] || "—"}</div>
-                    )}
-                  </td>
+                    {field.isRanked && <small>Ranked preferences</small>}
+                  </th>
                 ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {sortedRows.length === 0 && (
-        <div className="rounded-lg border border-dashed border-border/70 px-4 py-8 text-center text-sm text-muted-foreground">
-          No results match your filters.
+            </thead>
+            <tbody>
+              {paginatedRows.map((row) => (
+                <tr key={row.id}>
+                  <td className="results-submitted">
+                    <span>{formatResultsDate(row.submittedAt, { year: "numeric" })}</span>
+                    <small>
+                      {formatResultsDate(row.submittedAt, {
+                        day: undefined,
+                        month: undefined,
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                      <span>#{row.number}</span>
+                    </small>
+                  </td>
+                  <td>
+                    <span
+                      className={`results-status ${row.status === "approved" ? "is-approved" : row.status === "rejected" ? "is-rejected" : ""}`}
+                    >
+                      <i />
+                      {row.status}
+                    </span>
+                  </td>
+                  {fields.map((field) => (
+                    <td key={field.key}>{renderCell(row, field)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {sortedRows.length === 0 && (
+            <div className="results-empty">
+              <Inbox size={30} />
+              <strong>{rows.length ? "No matching records" : "No responses yet"}</strong>
+              <p>
+                {rows.length
+                  ? "Try adjusting or clearing your filters."
+                  : "Submitted responses will appear here."}
+              </p>
+              {hasActiveFilters && (
+                <button className="results-text-button" onClick={clearFilters}>
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
         </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
-            Previous
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            Page {page} / {totalPages}
+        <div className="results-pagination">
+          <span>
+            {sortedRows.length
+              ? `${(page - 1) * pageSizeNumber + 1}–${Math.min(page * pageSizeNumber, sortedRows.length)} of ${sortedRows.length}`
+              : "0 records"}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= totalPages}
-            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
-          >
-            Next
-          </Button>
+          <label>
+            Rows per page
+            <select
+              aria-label="Rows per page"
+              value={pageSize}
+              onChange={(event) => {
+                setPageSize(event.target.value)
+                setPage(1)
+              }}
+            >
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <option key={size}>{size}</option>
+              ))}
+            </select>
+          </label>
+          <div>
+            <button
+              aria-label="Previous page"
+              disabled={page === 1}
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <span>
+              {page} / {totalPages}
+            </span>
+            <button
+              aria-label="Next page"
+              disabled={page >= totalPages}
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+            >
+              <ChevronRight size={18} />
+            </button>
+          </div>
         </div>
-      )}
-    </div>
+      </section>
+      <ResultsAnalytics
+        fields={fields}
+        rows={filteredRows}
+        total={rows.length}
+        capacity={capacity}
+        now={now}
+        filtered={hasActiveFilters}
+      />
+      <Sheet
+        open={Boolean(detail)}
+        onOpenChange={(open) => {
+          if (!open) setDetail(null)
+        }}
+      >
+        <SheetContent
+          className="results-detail-sheet w-full sm:max-w-lg"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault()
+            detailTrigger.current?.focus()
+          }}
+        >
+          <SheetHeader>
+            <SheetTitle>{detail?.field.label}</SheetTitle>
+            <SheetDescription>
+              Record #{detail?.row.number} · {detail?.row.submittedLabel}
+            </SheetDescription>
+          </SheetHeader>
+          {detail && (
+            <div className="results-detail-body">
+              <p className="results-detail-label">
+                {detail.field.isRanked ? "Complete ranking · highest preference first" : "Complete answer"}
+              </p>
+              {detail.row.choices[detail.field.key] ? (
+                detail.field.isRanked ? (
+                  <ol className="results-ranking-full">
+                    {detail.row.choices[detail.field.key].map((choice, i) => (
+                      <li key={i}>
+                        <span className="results-rank" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <span>{choice}</span>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <ul className="results-selections-full">
+                    {detail.row.choices[detail.field.key].map((choice, i) => (
+                      <li key={i}>{choice}</li>
+                    ))}
+                  </ul>
+                )
+              ) : (
+                <p className="results-detail-text">{detail.row.values[detail.field.key]}</p>
+              )}
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
   )
 }
