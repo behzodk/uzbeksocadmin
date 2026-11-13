@@ -280,7 +280,8 @@
   overflow: auto;
   max-height: min(68vh, 760px);
   position: relative;
-  overscroll-behavior: contain;
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
   scrollbar-color: #bdc9db #f5f7fb;
   scrollbar-width: thin;
 }
@@ -982,4 +983,97 @@
 
 .results-selections-full {
   overflow-wrap: anywhere;
+}
+
+/* Retain native select behaviour while reserving a consistent arrow gutter. */
+.results-select {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.results-select > select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  padding-right: 40px;
+}
+.results-select > svg {
+  position: absolute;
+  right: 14px;
+  pointer-events: none;
+  color: #496078;
+}
+.results-toolbar .results-select {
+  width: 150px;
+  flex: 0 0 auto;
+}
+.results-pagination .results-select > select {
+  padding-left: 10px;
+  min-width: 76px;
+}
+.results-record-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+.results-insights-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #2365c4;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  border-radius: 4px;
+  padding: 3px 0;
+}
+.results-insights-link:hover {
+  text-decoration: underline;
+}
+.results-pagination > .results-pagination-summary {
+  margin-right: auto;
+  gap: 16px;
+}
+#insights-heading {
+  scroll-margin-top: 100px;
+}
+@media (max-width: 800px) {
+  .results-toolbar .results-select {
+    flex: 1;
+    width: auto;
+  }
+}
+@media (max-width: 500px) {
+  .results-record-actions .results-time-note {
+    display: none;
+  }
+  .results-record-actions {
+    gap: 0;
+  }
+  .results-insights-link {
+    font-size: 11px;
+  }
+  .results-pagination > .results-pagination-summary {
+    gap: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .results-toolbar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .results-search {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .results-toolbar .results-select {
+    width: 100%;
+    max-width: none;
+  }
+  .results-filter-button {
+    grid-column: 1 / -1;
+    justify-content: center;
+  }
 }

@@ -77,7 +77,9 @@ export function ResultsAnalytics({
       <div className="results-section-heading">
         <div>
           <p className="results-overline">Response insights</p>
-          <h2 id="insights-heading">Registration overview</h2>
+          <h2 id="insights-heading" tabIndex={-1}>
+            Registration overview
+          </h2>
         </div>
         <p>
           {filtered ? `${rows.length} matching records · filters applied` : "All responses"} · London time

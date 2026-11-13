@@ -1,10 +1,11 @@
 "use client"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState, type SelectHTMLAttributes } from "react"
 import {
   Search,
   SlidersHorizontal,
   X,
   LockKeyhole,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ArrowDown,
@@ -20,6 +21,15 @@ interface PublicResultsTableProps {
   rows: PublicResultsRow[]
   capacity?: number | null
   now: number
+}
+
+function ResultsSelect({ children, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <span className="results-select">
+      <select {...props}>{children}</select>
+      <ChevronDown size={16} aria-hidden="true" />
+    </span>
+  )
 }
 
 type SortOption = "newest" | "oldest" | "status_asc" | "status_desc"
@@ -310,7 +320,7 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
               placeholder="Search records…"
             />
           </div>
-          <select
+          <ResultsSelect
             aria-label="Filter by status"
             value={statusFilter}
             onChange={(event) => {
@@ -324,8 +334,8 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
                 {status}
               </option>
             ))}
-          </select>
-          <select
+          </ResultsSelect>
+          <ResultsSelect
             aria-label="Sort records"
             value={sortBy}
             onChange={(event) => {
@@ -337,7 +347,7 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
             <option value="oldest">Oldest first</option>
             <option value="status_asc">Status A–Z</option>
             <option value="status_desc">Status Z–A</option>
-          </select>
+          </ResultsSelect>
           <button
             className={`results-filter-button ${showAdvanced ? "is-active" : ""}`}
             aria-expanded={showAdvanced}
@@ -417,7 +427,12 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
         <div className="results-record-count" role="status">
           <strong>{sortedRows.length.toLocaleString("en-GB")}</strong>{" "}
           {hasActiveFilters ? `matching records of ${rows.length}` : "records"}
-          <span>All times in London</span>
+          <span className="results-record-actions">
+            <span className="results-time-note">All times in London</span>
+            <a className="results-insights-link" href="#insights-heading">
+              View insights <ArrowDown size={13} aria-hidden="true" />
+            </a>
+          </span>
         </div>
         <div
           className="results-table-scroll"
@@ -515,14 +530,19 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
           )}
         </div>
         <div className="results-pagination">
-          <span>
-            {sortedRows.length
-              ? `${(page - 1) * pageSizeNumber + 1}–${Math.min(page * pageSizeNumber, sortedRows.length)} of ${sortedRows.length}`
-              : "0 records"}
-          </span>
+          <div className="results-pagination-summary">
+            <span>
+              {sortedRows.length
+                ? `${(page - 1) * pageSizeNumber + 1}–${Math.min(page * pageSizeNumber, sortedRows.length)} of ${sortedRows.length}`
+                : "0 records"}
+            </span>
+            <a className="results-insights-link" href="#insights-heading">
+              View insights <ArrowDown size={13} aria-hidden="true" />
+            </a>
+          </div>
           <label>
             Rows per page
-            <select
+            <ResultsSelect
               aria-label="Rows per page"
               value={pageSize}
               onChange={(event) => {
@@ -533,7 +553,7 @@ export function PublicResultsTable({ fields, rows, capacity, now }: PublicResult
               {PAGE_SIZE_OPTIONS.map((size) => (
                 <option key={size}>{size}</option>
               ))}
-            </select>
+            </ResultsSelect>
           </label>
           <div>
             <button
