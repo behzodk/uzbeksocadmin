@@ -25,3 +25,54 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Private AI instructions and local assistant state
+[Gg][Ee][Mm][Ii][Nn][Ii].md
+[Cc][Ll][Aa][Uu][Dd][Ee].md
+[Aa][Gg][Ee][Nn][Tt][Ss].md
+AGENTS.override.md
+.cursorrules
+.windsurfrules
+.github/copilot-instructions.md
+.github/instructions/
+.gemini/
+.claude/
+.codex/
+.cursor/
+.windsurf/
+.aider*
+.continue/
+.mcp.json
+mcp.json
+
+# Local database tooling and SQL (kept private by project preference)
+/supabase/
+
+# Environment, credentials, and private local configuration
+.env
+.env.*
+*.env
+*.env.*
+.envrc
+.pypirc
+.netrc
+credentials.json
+service-account*.json
+serviceAccount*.json
+*.pem
+*.key
+*.p12
+*.pfx
+/secrets/
+/.secrets/
+/.aws/
+/.ssh/
+/.vercel/
+
+# Local machine metadata and database exports
+.DS_Store
+Thumbs.db
+*.dump
+*.sql.gz
+*.sqlite
+*.sqlite3
