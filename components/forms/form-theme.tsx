@@ -1,3 +1,5 @@
+import { WinterScene } from "./winter-scene"
+import "./new-year-theme.css"
 import type { ReactNode } from "react"
 import { MoviePiece } from "./movie-artwork"
 import { GamePiece } from "./game-artwork"
@@ -24,12 +26,7 @@ export function FormThemeFrame({ theme, children }: { theme?: string; children: 
           <MoviePiece kind="tickets" className="movie-tickets" />
         </div>
       )}
-      {selected === "new-year" && (
-        <div className="theme-margin-art" aria-hidden="true">
-          <span className="theme-orbit" />
-          <span className="theme-spark">✳</span>
-        </div>
-      )}
+      {selected === "new-year" && <WinterScene />}
       <div className="theme-content">{children}</div>
     </div>
   )

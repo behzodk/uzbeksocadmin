@@ -1,53 +1,19 @@
 .form-theme[data-form-theme="standard"]{display:contents}
-.form-theme[data-form-theme="new-year"]{--background:42 44% 96%;--foreground:160 29% 16%;--card:42 44% 98%;--card-foreground:160 29% 16%;--muted:42 22% 90%;--muted-foreground:160 10% 35%;--secondary:42 44% 96%;--secondary-foreground:160 29% 16%;--primary:160 29% 22%;--primary-foreground:42 44% 98%;--border:160 15% 76%;--input:160 15% 76%;color:#203b31;background:#f6f1e5;position:relative;isolation:isolate;padding-bottom:48px}
 .theme-prologue{max-width:1120px;margin:auto;padding:30px 28px 18px;position:relative;border-bottom:1px solid #203b3130}
 .theme-edition{font:600 10px/1.5 monospace;letter-spacing:.18em}.theme-caption{font:italic 18px/1.5 Georgia,serif;margin:16px 0 0}
 .theme-stickers{height:140px;display:flex;align-items:center;justify-content:center;gap:28px;padding:20px;pointer-events:none}
 .theme-die{display:grid;grid-template-columns:repeat(2,12px);gap:15px;padding:18px;background:#e6a346;border:2px solid #203b31;border-radius:17px;box-shadow:5px 6px 0 #203b31;transform:rotate(-13deg);animation:theme-arrive .7s ease-out both}.theme-die i{width:12px;height:12px;background:#203b31;border-radius:50%}
 .theme-card{display:flex;flex-direction:column;width:64px;height:89px;padding:6px 10px;border:1px solid #203b31;background:#fffaf0;border-radius:7px;box-shadow:4px 5px 0 #203b3120;transform:rotate(12deg);font:22px Georgia,serif;animation:theme-arrive .9s ease-out both}.theme-card span{font-size:42px;text-align:center}
 .theme-seal{display:grid;place-content:center;width:93px;height:93px;border-radius:50%;border:1px dashed currentColor;background:#d8e2b9;font:700 12px/1.35 monospace;text-align:center;transform:rotate(-8deg)}
-.form-theme[data-form-theme="new-year"] .theme-content>div{background:transparent}
-.form-theme[data-form-theme="new-year"] section{background:transparent}
-.form-theme[data-form-theme="new-year"] .uzbek-pattern{display:none}
-.form-theme[data-form-theme="new-year"] form{max-width:780px;margin-inline:auto;background:#fffcf6;color:#203b31;border:1px solid #203b3130;border-radius:18px;box-shadow:0 16px 60px #203b3108;padding:clamp(22px,5vw,48px)}
-.form-theme[data-form-theme="new-year"] input,.form-theme[data-form-theme="new-year"] textarea{box-shadow:none;border-width:1px;border-radius:7px}
-.form-theme[data-form-theme="new-year"] h1{font-family:Georgia,serif;font-weight:400;letter-spacing:-.04em;line-height:1.08}
-.form-theme[data-form-theme="new-year"] button[type="submit"]{background:#203b31;color:#fffaf0;border-radius:8px;box-shadow:none;min-height:48px;transition:transform .2s}
-.form-theme[data-form-theme="new-year"] button[type="submit"]:hover{transform:translateY(-2px)}
-.form-theme[data-form-theme="new-year"]{background:#171f2a;color:#eaddc0;--secondary-foreground:42 44% 84%}
-.form-theme[data-form-theme="new-year"] .theme-prologue{border-color:#eaddc040}
-.form-theme[data-form-theme="new-year"] .theme-content h1{color:#eaddc0}
-.form-theme[data-form-theme="new-year"] .theme-seal{background:transparent;color:#eaddc0}
 .theme-spark{font-size:88px;color:#d5b677;animation:theme-arrive 1s ease-out both}
 .theme-orbit{width:82px;height:82px;border:1px solid #d5b677;border-radius:50%;position:relative}.theme-orbit:before,.theme-orbit:after{content:"";position:absolute;inset:8px;border:1px solid #d5b67780;border-radius:50%}.theme-orbit:after{inset:18px}
 @keyframes theme-arrive{from{opacity:0;translate:0 10px}to{opacity:1;translate:0 0}}
 @media(prefers-reduced-motion:reduce){.form-theme *{animation:none!important;transition:none!important}}
 @media(max-width:600px){.theme-prologue{padding:22px 20px 16px}.theme-stickers{height:125px;gap:22px}.theme-caption{font-size:15px}}
 
-.form-theme[data-form-theme="new-year"] .theme-content main h1{color:#203b31}
-.form-theme[data-form-theme="new-year"] .theme-content>div>header{background:#171f2a;color:#eaddc0}
 
 /* Decoration occupies the page margins, never the reading flow. */
 .theme-margin-art{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:-1}
 .theme-margin-art>:first-child{position:absolute;top:190px;left:calc(50% - 470px);scale:.65;opacity:.6}
 .theme-margin-art>:last-child{position:absolute;top:430px;right:calc(50% - 470px);scale:.65;opacity:.5}
-.form-theme[data-form-theme="new-year"]{padding-top:24px;min-height:80vh}
-.form-theme[data-form-theme="new-year"] .form-heading{max-width:720px;margin:0 auto 16px;padding:24px 28px;background:#fffcf6;border:1px solid #203b3125;border-top:5px solid #35634e;border-radius:10px;color:#203b31}
-.form-theme[data-form-theme="new-year"] .form-heading .container{padding:0}
-.form-theme[data-form-theme="new-year"] .form-heading .grid{display:flex;flex-direction:column;align-items:stretch;gap:12px}
-.form-theme[data-form-theme="new-year"] .form-heading .neo-badge{border:0;box-shadow:none;background:none;padding:0;font:600 11px/1.4 sans-serif;letter-spacing:.08em;margin-bottom:10px;color:#53675d}
-.form-theme[data-form-theme="new-year"] h1{font-family:inherit;font-size:30px;font-weight:600;letter-spacing:-.025em;line-height:1.2;margin-bottom:10px}
-.form-theme[data-form-theme="new-year"] .form-heading p{color:#53605a;font-size:15px;line-height:1.6}
-.form-theme[data-form-theme="new-year"] .form-body{padding:0}
-.form-theme[data-form-theme="new-year"] .form-body>.container{max-width:720px;padding:0}
-.form-theme[data-form-theme="new-year"] form{max-width:720px;padding:24px 28px;border-radius:10px;box-shadow:none}
-.form-theme[data-form-theme="new-year"]{background:#eef0f5;--secondary-foreground:160 29% 16%}
-.form-theme[data-form-theme="new-year"] .theme-content h1{color:#24334b}
-.form-theme[data-form-theme="new-year"] .form-heading{border-top-color:#b89a53}
-.form-theme[data-form-theme="new-year"] .theme-content>div>header{display:none}
-.form-theme[data-form-theme="new-year"] .theme-content main{max-width:776px;padding:0 28px}
-.form-theme[data-form-theme="new-year"] .theme-content main>div{border-radius:10px;box-shadow:none;border-top:5px solid #35634e}
-.form-theme[data-form-theme="new-year"] .theme-content main>div>div{padding:24px}
-.form-theme[data-form-theme="new-year"] .theme-content main .lg\:grid-cols-\[minmax\(0\,1fr\)_15rem\]{display:block}
 @media(max-width:960px){.theme-margin-art{display:none}}
-@media(max-width:760px){.form-theme[data-form-theme="new-year"]{padding:16px 12px 32px}.form-theme[data-form-theme="new-year"] .form-heading,.form-theme[data-form-theme="new-year"] form{padding:20px}.form-theme[data-form-theme="new-year"] h1{font-size:26px}.form-theme[data-form-theme="new-year"] .theme-content main{padding:0}}
