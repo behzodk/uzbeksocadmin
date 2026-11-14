@@ -15,7 +15,7 @@ export default function TermsOfServicePage() {
             Last updated: January 17, 2026
           </p>
           <p className="text-sm text-muted-foreground pt-2">
-            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the Admin Dashboard (the "Service") operated by our organization ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.
+            Please read these Terms of Service ("Terms", "Terms of Service") carefully before using the UzbekSoc Admin Portal (the "Service") operated by our organization ("us", "we", or "our"). Your access to and use of the Service is conditioned on your acceptance of and compliance with these Terms.
           </p>
         </div>
 
@@ -36,7 +36,7 @@ export default function TermsOfServicePage() {
           </h2>
           <div className="space-y-3 text-sm text-muted-foreground">
             <p>
-              The Admin Dashboard is an internal tool intended for authorized administrative use only. You agree to:
+              The UzbekSoc Admin Portal is an internal tool intended for authorized administrative use only. You agree to:
             </p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Use the Service only for lawful purposes and in accordance with these Terms.</li>

@@ -7,9 +7,11 @@ const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'v0 App',
-  description: 'Created with v0',
-  generator: 'v0.app',
+  title: { default: 'UzbekSoc Admin Portal', template: '%s | UzbekSoc Admin Portal' },
+  applicationName: 'UzbekSoc Admin Portal',
+  description: 'The administration portal for the Uzbek Society at the University of Birmingham. Developed by Behod Musurmonkulov.',
+  authors: [{ name: 'Behod Musurmonkulov' }],
+  creator: 'Behod Musurmonkulov',
   icons: {
     icon: [
       {

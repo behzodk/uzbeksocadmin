@@ -104,7 +104,7 @@ export function Sidebar() {
       )}
     >
       <div className="flex items-center justify-between border-b border-border p-4">
-        {!collapsed && <h1 className="text-lg font-semibold text-foreground">Admin Panel</h1>}
+        {!collapsed && <h1 className="text-base leading-tight font-semibold text-foreground">UzbekSoc Admin Portal</h1>}
         <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} className="h-8 w-8">
           {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>

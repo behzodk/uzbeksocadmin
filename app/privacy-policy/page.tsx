@@ -15,7 +15,7 @@ export default function PrivacyPolicyPage() {
             Last updated: January 17, 2026
           </p>
           <p className="text-sm text-muted-foreground pt-2">
-            This Privacy Policy describes how the Admin Dashboard ("we", "us",
+            This Privacy Policy describes how the UzbekSoc Admin Portal ("we", "us",
             or "our") collects, uses, and discloses your information when you
             use our service. By accessing or using the Service, you consent to
             the collection, use, and disclosure of your information in

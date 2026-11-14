@@ -90,7 +90,7 @@ export default function SignInPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md rounded-3xl border border-border bg-card p-8 shadow-xl">
         <div className="space-y-2 text-center">
-          <p className="text-xs uppercase tracking-[0.4em] text-muted-foreground">Admin Access</p>
+          <p className="text-xs uppercase tracking-[0.15em] text-muted-foreground">UzbekSoc Admin Portal</p>
           <h1 className="text-3xl font-semibold text-foreground">Sign in</h1>
           <p className="text-sm text-muted-foreground">Use Google to continue to the dashboard.</p>
         </div>

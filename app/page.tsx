@@ -20,7 +20,7 @@ export default async function LandingPage() {
           <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
             <ShieldCheck className="w-5 h-5 text-primary" />
           </div>
-          <span>uzbeksoc admin</span>
+          <span>UzbekSoc Admin Portal</span>
         </div>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <Link href="/privacy-policy" className="hover:text-foreground transition-colors">Privacy</Link>
@@ -35,7 +35,7 @@ export default async function LandingPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
-                Organization Management System
+                UzbekSoc Admin Portal
               </h1>
               <p className="text-xl text-muted-foreground leading-relaxed">
                 A centralized internal platform designed for authorized administrators to manage members, coordinate events, and distribute news efficiently.
@@ -103,7 +103,8 @@ export default async function LandingPage() {
       </main>
 
       <footer className="px-6 py-6 text-center text-sm text-muted-foreground border-t border-border">
-        <p>&copy; {new Date().getFullYear()} uzbeksoc. All rights reserved.</p>
+        <p>&copy; {new Date().getFullYear()} UzbekSoc. All rights reserved.</p>
+        <p className="mt-1 text-xs">Developed by Behod Musurmonkulov.</p>
       </footer>
     </div>
   )
